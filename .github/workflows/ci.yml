@@ -22,3 +22,9 @@ jobs:
       - run: npx prisma generate
       - run: npm run build
       - run: npm test
+
+      - name: Install and build web frontend
+        working-directory: web
+        run: |
+          npm install
+          npm run build
