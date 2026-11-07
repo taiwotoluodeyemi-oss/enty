@@ -55,7 +55,7 @@ Security, payment, concurrency, QR, refund, recovery and load testing; pilot org
 
 ## Technical direction
 
-The blueprint recommends Next.js/React, Node.js/NestJS, PostgreSQL, Redis, object storage, provider abstraction, and OpenAPI. These are preferred choices, not assumptions about existing code. The actual repository implementation and dependencies must be inspected before scaffolding or migration.
+The preferred architecture includes a Next.js/React web client, Node.js API, PostgreSQL, Redis, object storage, provider abstraction, and OpenAPI. The repository currently keeps the Express/Prisma API at its root and now includes a separate `web/` Next.js discovery UI workspace. The frontend is a design foundation with illustrative listings; it is not yet integrated with checkout, payment, inventory, or organizer workflows.
 
 ## Product specification
 
