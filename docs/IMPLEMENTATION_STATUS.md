@@ -25,12 +25,12 @@ This is an initial backend foundation, not a complete launch-ready product. Rema
 - Ticketing: atomic inventory reservation, order lifecycle, secure QR token issuance, duplicate-scan prevention, gate staff access, offline scan reconciliation, and attendee ticket views.
 - Payments and money: provider adapters, trusted server-side payment verification, signed webhook handling, idempotency, double-entry ledger invariants, reconciliation, refunds, settlement, commission and promoter payout controls.
 - Marketplace: promotions, advertiser products, vendor listings, notifications, dispute and support workflows.
-- Interfaces: attendee, organizer, gate staff, admin web experiences and mobile clients.
+- Interfaces: a separate `web/` Next.js discovery UI starter now exists with responsive editorial styling, search input, category filtering, illustrative event cards, and a host CTA. It is not yet API-connected and does not implement attendee checkout, organizer workflows, gate staff, admin web experiences, or mobile clients.
 - Operations: structured request logging and correlation IDs, metrics, alerting, runbooks, incident response, privacy and retention controls, CI quality gates, deployment configuration and end-to-end tests.
 - Security, load, accessibility, and payment-provider certification testing.
 
 ## Verification
 
-The changes in this repository have been committed through GitHub's repository API. This environment has not run the project build, tests, database migrations, security tests, or deployment smoke tests. Run `npm install`, `npm run db:generate`, `npm run build`, and `npm test` in a controlled environment, then test against a production-like PostgreSQL database and payment-provider sandbox before any release.
+The web design foundation and documentation updates have been committed to the GitHub `main` branch through the repository API. This environment has not run either the API or web project build, tests, database migrations, security tests, or deployment smoke tests. No local Git checkout/commit was available in this environment. Run `npm install`, `npm run db:generate`, `npm run build`, and `npm test` in a controlled environment, then test against a production-like PostgreSQL database and payment-provider sandbox before any release.
 
 Do not represent this repository as production-ready until these checks pass and the listed critical workflows have been implemented and independently reviewed.
