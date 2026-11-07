@@ -14,6 +14,7 @@ This file separates repository implementation from product ambition. Update it a
 - Account registration and login endpoints using bcrypt password hashing and short-lived signed JWT access tokens.
 - Event creation requires a valid bearer token and the ORGANIZER role. The organizer ID is derived from the verified token, not request input.
 - Production startup refuses to run without a configured JWT secret of at least 32 characters.
+- GitHub Actions CI workflow now runs Prisma validation/client generation, API build/tests, and web lint/build for pushes and pull requests targeting `main`.
 
 ## Still not production-ready
 
@@ -25,12 +26,12 @@ This is an initial backend foundation, not a complete launch-ready product. Rema
 - Ticketing: atomic inventory reservation, order lifecycle, secure QR token issuance, duplicate-scan prevention, gate staff access, offline scan reconciliation, and attendee ticket views.
 - Payments and money: provider adapters, trusted server-side payment verification, signed webhook handling, idempotency, double-entry ledger invariants, reconciliation, refunds, settlement, commission and promoter payout controls.
 - Marketplace: promotions, advertiser products, vendor listings, notifications, dispute and support workflows.
-- Interfaces: a separate `web/` Next.js discovery UI starter now exists with responsive editorial styling, search input, category filtering, illustrative event cards, and a host CTA. It is not yet API-connected and does not implement attendee checkout, organizer workflows, gate staff, admin web experiences, or mobile clients.
-- Operations: structured request logging and correlation IDs, metrics, alerting, runbooks, incident response, privacy and retention controls, CI quality gates, deployment configuration and end-to-end tests.
+- Interfaces: the separate `web/` Next.js discovery UI is still illustrative, is not API-connected, and does not implement attendee checkout, organizer workflows, gate staff, or admin web experiences.
+- Operations: structured request logging and correlation IDs, metrics, alerting, runbooks, incident response, privacy and retention controls, deployment configuration, and end-to-end tests.
 - Security, load, accessibility, and payment-provider certification testing.
 
 ## Verification
 
-The web design foundation and documentation updates have been committed to the GitHub `main` branch through the repository API. This environment has not run either the API or web project build, tests, database migrations, security tests, or deployment smoke tests. No local Git checkout/commit was available in this environment. Run `npm install`, `npm run db:generate`, `npm run build`, and `npm test` in a controlled environment, then test against a production-like PostgreSQL database and payment-provider sandbox before any release.
+The GitHub Actions workflow has been added but has not yet run in this editing session. No local Git checkout or execution environment was available here, so no build, test, migration, security, or deployment smoke-test result is claimed. A successful CI run is necessary but not sufficient for release. Use the [Production Readiness Gate](PRODUCTION_READINESS.md) to track remaining acceptance evidence.
 
-Do not represent this repository as production-ready until these checks pass and the listed critical workflows have been implemented and independently reviewed.
+Do not represent this repository as production-ready until the critical workflows above have been implemented, verified in a production-like environment, and independently reviewed.
