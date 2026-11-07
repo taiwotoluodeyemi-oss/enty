@@ -9,22 +9,48 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  validate:
+  api:
+    name: API build and tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
-      - run: npm install
-      - run: npx prisma generate
-      - run: npm run build
-      - run: npm test
+      - name: Install API dependencies
+        run: npm install
+      - name: Validate Prisma schema
+        run: npx prisma validate
+        env:
+          DATABASE_URL: file:./ci.db
+      - name: Generate Prisma client
+        run: npm run db:generate
+        env:
+          DATABASE_URL: file:./ci.db
+      - name: Build API
+        run: npm run build
+      - name: Run API tests
+        run: npm test
 
-      - name: Install and build web frontend
+  web:
+    name: Web lint and production build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
         working-directory: web
-        run: |
-          npm install
-          npm run build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install web dependencies
+        run: npm install
+      - name: Lint web
+        run: npm run lint
+      - name: Build web
+        run: npm run build
