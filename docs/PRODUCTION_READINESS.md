@@ -4,7 +4,7 @@ This is a release checklist, not a statement that EVTY already satisfies every i
 
 ## Release-blocking implementation and evidence
 
-- [ ] Replace SQLite with managed PostgreSQL; a fresh-database SQLite baseline is now checked in, but the PostgreSQL migration and tested data migration/recovery plan remain outstanding.
+- [ ] Replace SQLite with managed PostgreSQL; a temporary Render Free PostgreSQL 18 test database has been provisioned, but it is not connected. A reviewed PostgreSQL migration set, migration run, and tested data migration/recovery plan remain outstanding.
 - [ ] Complete email verification, password recovery, revocable sessions, rate limits backed by shared storage, lockout protections and privileged-user MFA.
 - [ ] Complete organiser/business verification, fine-grained admin permissions, event-scoped gate staff assignment and object-level authorization tests.
 - [ ] Implement expiring inventory reservations and atomic concurrency-safe capacity enforcement.
@@ -28,7 +28,7 @@ Record the commit SHA and environment, CI results, migration result, test report
 
 ## Known current limitations
 
-- The Prisma datasource is currently SQLite. An initial SQLite migration and database runbook are committed; PostgreSQL migration/cutover is not yet implemented or tested.
+- The Prisma datasource is currently SQLite. A temporary Render PostgreSQL 18 test database exists and is scheduled to expire on 2026-12-13; it is not connected. PostgreSQL migration/cutover is not yet implemented or tested. See [temporary PostgreSQL test database runbook](POSTGRESQL_TEST_DATABASE.md).
 - Authentication rate limiting is currently process-local; multi-instance production requires a shared store.
 - Payment provider, merchant account, fee/funds-flow terms, commission policy, payout rules and launch market require explicit configuration and review.
 - GitHub Actions now applies the checked-in migration to a fresh SQLite database before build/tests; the latest run has not yet been reported by GitHub, so migration/build/test success remains unverified.
