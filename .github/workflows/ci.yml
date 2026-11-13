@@ -28,6 +28,10 @@ jobs:
         run: npx prisma validate
         env:
           DATABASE_URL: file:./ci.db
+      - name: Apply checked-in database migrations
+        run: npm run db:deploy
+        env:
+          DATABASE_URL: file:./ci.db
       - name: Generate Prisma client
         run: npm run db:generate
         env:
