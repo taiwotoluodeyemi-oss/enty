@@ -50,7 +50,7 @@ The secondary repository, `Winning-game1`, has one visible commit dated 24 Octob
 
 - The repository has a root Express/Prisma API and a separate Next.js discovery frontend.
 - The Prisma datasource is currently SQLite; the product architecture document describes PostgreSQL as the intended production relational database.
-- The public web homepage uses illustrative hard-coded event cards and is not yet connected to the API.
+- The public web homepage and event-detail pages now read published listings and current ticket availability from the API; no hard-coded sample inventory is presented as real listings.
 - The API currently supports registration/login, event creation, and public event discovery. The 13 November 2026 update adds paginated event discovery, public event details with ticket availability, organiser event listing, draft ticket-type creation, and audited submission for review.
 - Checkout, verified payment webhooks, immutable double-entry ledger posting, ticket issuance, QR redemption, refunds, settlements, promoter attribution, advertising campaign execution, vendor workflows, and admin moderation remain separate implementation and acceptance-test work.
 - The upstream repository was available with read access; the EVTY repository is available with administrative write access. No upstream files were copied wholesale.
