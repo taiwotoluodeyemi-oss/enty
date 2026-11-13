@@ -1,26 +1,37 @@
 # Production Readiness Gate
 
-This is a release checklist, not a statement that the application already satisfies every item. EVTY's current repository is a starter foundation; a passing CI workflow alone does not establish production readiness.
+This is a release checklist, not a statement that EVTY already satisfies every item. EVTY is not approved for live ticket sales until all applicable release-blocking controls below are implemented and evidenced.
 
 ## Release-blocking implementation and evidence
 
-- [ ] Replace the SQLite development datasource with managed PostgreSQL and commit reviewed Prisma migrations.
-- [ ] Implement complete user lifecycle: email verification, recovery, revocable sessions, rate limits, lockout protections, and MFA for privileged roles.
-- [ ] Complete organizer verification, event moderation/publishing, role permissions, and resource-level authorization tests.
-- [ ] Implement order creation and expiring inventory reservations with atomic concurrency-safe capacity enforcement.
-- [ ] Implement payment provider adapters; verify provider status, amount, currency, and reference server-side. Verify webhook signatures, replay defense, and idempotency.
-- [ ] Enforce balanced, immutable ledger posting and reconciliation. Test duplicate callbacks, partial/full refunds, chargebacks, payout failures, and recovery.
-- [ ] Issue ticket credentials only after confirmed payment. Implement atomic QR redemption, gate/event staff permissions, duplicate scan rejection, and explicit offline sync conflict handling.
-- [ ] Integrate the web UI with real API data and implement attendee checkout, organizer, gate, and admin workflows. Remove or clearly label illustrative event data.
-- [ ] Add request rate limits, secure headers/CORS policy, payload validation, safe file handling, privacy-safe logs, audit trails, and dependency/security scanning.
-- [ ] Add operational metrics, alerting, outbox/retry/dead-letter handling, runbooks, backup and restore drills, and tested rollback.
-- [ ] Complete accessibility, performance/load, security, and payment-provider sandbox acceptance tests.
-- [ ] Obtain appropriate legal/accounting review for Nigerian payments, funds flow, tax, privacy, terms, and organizer agreements.
+- [ ] Replace SQLite with managed PostgreSQL; commit reviewed Prisma migrations and a tested data migration/recovery plan.
+- [ ] Complete email verification, password recovery, revocable sessions, rate limits backed by shared storage, lockout protections and privileged-user MFA.
+- [ ] Complete organiser/business verification, fine-grained admin permissions, event-scoped gate staff assignment and object-level authorization tests.
+- [ ] Implement expiring inventory reservations and atomic concurrency-safe capacity enforcement.
+- [ ] Implement checkout and a selected, contracted payment provider. Verify transaction status, reference, amount, currency and merchant account server-side.
+- [ ] Verify signed webhooks with replay defense, idempotency and reconciliation.
+- [ ] Enforce immutable balanced ledger posting and versioned accepted commission terms. Test duplicate callbacks, partial/full refunds, chargebacks, payout failures and recovery.
+- [ ] Issue tickets only after confirmed payment. Implement attendee ticket wallet, unique QR credentials, atomic event-scoped redemption, duplicate-scan rejection and a documented offline policy.
+- [ ] Implement attendee checkout/account/ticket/refund interfaces and complete organiser, gate, admin, promoter, advertiser and vendor portals.
+- [ ] Add secure event image/media uploads, object storage, content validation and moderation.
+- [ ] Add structured request logs, correlation IDs, operational metrics, alerting, outbox/retry/dead-letter handling, runbooks, backup/restore drills and tested rollback.
+- [ ] Complete accessibility, performance/load, dependency/security, payment-provider sandbox and end-to-end acceptance tests.
+- [ ] Obtain appropriate legal/accounting review for Nigerian payments, funds flow, tax, privacy, terms, consumer refunds and organiser agreements.
 
-## Release evidence to attach
+## Current attendee event experience
 
-Record the commit SHA and environment, CI results, migration result, test reports, payment sandbox scenarios, load profile and results, backup restore evidence, operational owner, rollback procedure, and known limitations. Do not use production customer funds or live ticket inventory for acceptance testing.
+The homepage and all-events directory load published event data from the EVTY API. Users can search/filter, open a responsive quick-view dialog, inspect event details and ticket availability, and navigate to the full event page. This is discovery only: ticket availability is informational and is not a stock reservation. Checkout and ticket issuance are not enabled by the quick-view feature.
 
-## Current repository scope
+## Verification evidence required
 
-The API currently includes registration/login, a published-event listing, and authenticated organizer draft-event creation. The separate Next.js web workspace is an illustrative event-discovery starter and is not integrated with checkout or organizer operations. See [Implementation Status](IMPLEMENTATION_STATUS.md) and [Architecture & Financial Safety](ARCHITECTURE_AND_FINANCIAL_SAFETY.md).
+Record the commit SHA and environment, CI results, migration result, test reports, payment sandbox scenarios, load profile/results, backup restore evidence, operational owner, rollback procedure, and known limitations. Do not use production customer funds or live ticket inventory for acceptance testing.
+
+## Known current limitations
+
+- The Prisma datasource is currently SQLite and there is no reviewed PostgreSQL migration set.
+- Authentication rate limiting is currently process-local; multi-instance production requires a shared store.
+- Payment provider, merchant account, fee/funds-flow terms, commission policy, payout rules and launch market require explicit configuration and review.
+- The GitHub Actions workflow exists, but a passing run has not been verified in this editing session.
+- No local build, test, migration, security, load, or deployment smoke-test result is claimed.
+
+A successful CI run is necessary but not sufficient for release. Do not represent EVTY as production-ready until the critical workflows above are implemented, independently reviewed and verified in a production-like environment.
