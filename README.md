@@ -64,3 +64,7 @@ See [EVTY Product Requirements](docs/EVTY_PRODUCT_REQUIREMENTS.md) and [Architec
 ## Status
 
 The blueprint has been integrated into the repository documentation. Application implementation, payment integrations, security controls, and production readiness must be built and verified separately; this README does not claim those features are already implemented.
+
+## Upstream engineering review
+
+The latest transferable engineering updates from `demtaiwo1-eng/Winning-game-` have been reviewed. See [Upstream Integration Review](docs/UPSTREAM_INTEGRATION_REVIEW.md) for the commit-by-commit assessment, integration decisions, and EVTY-specific release gates. EPHINTA is a separate product; its branding and incompatible business rules are not copied into EVTY.
