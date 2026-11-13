@@ -514,6 +514,76 @@ app.post("/api/v1/events/:eventId/submit", authenticate, requireRole("ORGANIZER"
   }
 });
 
+const reviewEventSchema = z.object({
+  decision: z.enum(["APPROVE", "RETURN_TO_DRAFT"]),
+  reason: z.string().trim().min(5).max(1000).optional()
+}).refine((value) => value.decision === "APPROVE" || Boolean(value.reason), {
+  message: "A reason is required when returning an event to draft",
+  path: ["reason"]
+});
+
+app.patch("/api/v1/admin/events/:eventId/review", authenticate, requireRole("ADMIN"), async (req, res, next) => {
+  try {
+    const eventId = eventIdSchema.safeParse(req.params.eventId);
+    const parsed = reviewEventSchema.safeParse(req.body);
+    if (!eventId.success) {
+      res.status(400).json({ error: { code: "INVALID_EVENT_ID", message: "The event identifier is invalid" } });
+      return;
+    }
+    if (!parsed.success) {
+      res.status(400).json({ error: { code: "VALIDATION_ERROR", details: parsed.error.flatten() } });
+      return;
+    }
+    const event = await prisma.event.findFirst({
+      where: { id: eventId.data, status: "PENDING_REVIEW" },
+      select: {
+        id: true, title: true, startsAt: true, status: true,
+        _count: { select: { ticketTypes: true } }
+      }
+    });
+    if (!event) {
+      res.status(404).json({ error: { code: "REVIEW_EVENT_NOT_FOUND", message: "A pending event was not found" } });
+      return;
+    }
+    if (parsed.data.decision === "APPROVE" && event._count.ticketTypes < 1) {
+      res.status(409).json({ error: { code: "TICKET_TYPES_REQUIRED", message: "An event needs at least one ticket type before publication" } });
+      return;
+    }
+    if (parsed.data.decision === "APPROVE" && event.startsAt <= new Date()) {
+      res.status(409).json({ error: { code: "EVENT_ALREADY_STARTED", message: "An event that has already started cannot be published" } });
+      return;
+    }
+    const nextStatus = parsed.data.decision === "APPROVE" ? "PUBLISHED" : "DRAFT";
+    const updated = await prisma.$transaction(async (tx) => {
+      const result = await tx.event.updateMany({
+        where: { id: event.id, status: "PENDING_REVIEW" },
+        data: { status: nextStatus }
+      });
+      if (result.count !== 1) throw new Error("EVENT_REVIEW_CONFLICT");
+      await tx.auditLog.create({
+        data: {
+          actorId: req.auth!.userId,
+          action: parsed.data.decision === "APPROVE" ? "EVENT_APPROVED" : "EVENT_RETURNED_TO_DRAFT",
+          resourceType: "Event",
+          resourceId: event.id,
+          metadata: JSON.stringify({ reason: parsed.data.reason ?? null })
+        }
+      });
+      return tx.event.findUnique({
+        where: { id: event.id },
+        select: { id: true, title: true, status: true, updatedAt: true }
+      });
+    });
+    res.json({ data: updated });
+  } catch (error) {
+    if (error instanceof Error && error.message === "EVENT_REVIEW_CONFLICT") {
+      res.status(409).json({ error: { code: "EVENT_REVIEW_CONFLICT", message: "The event changed while it was being reviewed. Refresh and try again." } });
+      return;
+    }
+    next(error);
+  }
+});
+
 app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
   // Never send internal exception details or secrets to clients.
   console.error(JSON.stringify({ level: "error", event: "request_error", errorName: error instanceof Error ? error.name : "unknown" }));
