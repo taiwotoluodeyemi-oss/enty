@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import jwt, { type JwtPayload } from "jsonwebtoken";
 import { PrismaClient, type UserRole } from "@prisma/client";
 import { z } from "zod";
+import { consumeFixedWindowRateLimit, type RateLimitBucket } from "./domain/fixedWindowRateLimit.js";
 
 const app = express();
 const prisma = new PrismaClient();
@@ -73,31 +74,18 @@ function authenticate(req: Request, res: Response, next: NextFunction): void {
   }
 }
 
-type RateLimitBucket = { count: number; resetAt: number };
-
 function rateLimit(maxRequests: number, windowMs: number) {
   const buckets = new Map<string, RateLimitBucket>();
   return (req: Request, res: Response, next: NextFunction): void => {
-    const now = Date.now();
     const key = req.ip || req.socket.remoteAddress || "unknown";
-    let bucket = buckets.get(key);
-    if (!bucket || bucket.resetAt <= now) {
-      bucket = { count: 0, resetAt: now + windowMs };
-      buckets.set(key, bucket);
-    }
-    bucket.count += 1;
+    const decision = consumeFixedWindowRateLimit(buckets, key, maxRequests, windowMs);
     res.setHeader("RateLimit-Limit", String(maxRequests));
-    res.setHeader("RateLimit-Remaining", String(Math.max(0, maxRequests - bucket.count)));
-    res.setHeader("RateLimit-Reset", String(Math.ceil(bucket.resetAt / 1000)));
-    if (bucket.count > maxRequests) {
-      res.setHeader("Retry-After", String(Math.max(1, Math.ceil((bucket.resetAt - now) / 1000))));
+    res.setHeader("RateLimit-Remaining", String(decision.remaining));
+    res.setHeader("RateLimit-Reset", String(Math.ceil(decision.resetAt / 1000)));
+    if (!decision.allowed) {
+      res.setHeader("Retry-After", String(decision.retryAfterSeconds));
       res.status(429).json({ error: { code: "RATE_LIMITED", message: "Too many requests. Please try again later." } });
       return;
-    }
-    if (buckets.size > 10000) {
-      for (const [bucketKey, value] of buckets) {
-        if (value.resetAt <= now) buckets.delete(bucketKey);
-      }
     }
     next();
   };
