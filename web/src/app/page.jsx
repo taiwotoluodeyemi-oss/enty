@@ -30,6 +30,10 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [reload, setReload] = useState(0);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [eventDetails, setEventDetails] = useState(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [detailsError, setDetailsError] = useState("");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -69,6 +73,36 @@ export default function HomePage() {
       controller.abort();
     };
   }, [query, city, reload]);
+
+  useEffect(() => {
+    if (!selectedEvent) return undefined;
+    const controller = new AbortController();
+    setEventDetails(null);
+    setDetailsError("");
+    setDetailsLoading(true);
+    fetch(apiBase + "/events/" + encodeURIComponent(selectedEvent.id), {
+      headers: { Accept: "application/json" },
+      signal: controller.signal,
+      cache: "no-store"
+    }).then(async (response) => {
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error?.message || "Event details could not be loaded.");
+      if (!payload.data) throw new Error("The event service returned an unexpected response.");
+      setEventDetails(payload.data);
+    }).catch((requestError) => {
+      if (requestError.name !== "AbortError") setDetailsError(requestError.message || "Please try again.");
+    }).finally(() => {
+      if (!controller.signal.aborted) setDetailsLoading(false);
+    });
+    return () => controller.abort();
+  }, [selectedEvent]);
+
+  useEffect(() => {
+    if (!selectedEvent) return undefined;
+    const closeOnEscape = (event) => { if (event.key === "Escape") setSelectedEvent(null); };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [selectedEvent]);
 
   const visibleEvents = useMemo(() => events.map((event, index) => {
     const ticketType = event.ticketTypes?.[0];
@@ -162,14 +196,14 @@ export default function HomePage() {
           <div className="event-grid">
             {visibleEvents.map((event) => (
               <article className="event-card" key={event.id}>
-                <a className={"event-visual " + event.visual} href={"/events/" + encodeURIComponent(event.id)} aria-label={"View " + event.title}>
+                <button className={"event-visual event-visual-button " + event.visual} type="button" onClick={() => setSelectedEvent(event)} aria-label={"Quick view: " + event.title} aria-haspopup="dialog">
                   <span className="event-tag">{event.tag}</span>
                   <span className="visual-mark">{event.mark}</span>
                   <span className="visual-lines" aria-hidden="true" />
                   <span className="event-date">{event.date}</span>
-                </a>
+                </button>
                 <div className="event-meta"><span>EVENT</span><span>{event.city.toUpperCase()}</span></div>
-                <h3><a href={"/events/" + encodeURIComponent(event.id)}>{event.title}</a></h3>
+                <h3><button className="event-title-button" type="button" onClick={() => setSelectedEvent(event)} aria-haspopup="dialog">{event.title}</button></h3>
                 <p className="event-place">{event.place}</p>
                 <div className="event-bottom"><span>{event.time}</span><strong>{event.price}</strong></div>
               </article>
@@ -179,6 +213,41 @@ export default function HomePage() {
         )}
         <div className="browse-more"><a className="button button-outline" href="/events">Explore all events <span aria-hidden="true">→</span></a></div>
       </section>
+
+      {selectedEvent && (
+        <div className="event-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedEvent(null); }}>
+          <section className="event-dialog" role="dialog" aria-modal="true" aria-labelledby="event-dialog-title" aria-describedby="event-dialog-description">
+            <button className="event-dialog-close" type="button" onClick={() => setSelectedEvent(null)} aria-label="Close event details">×</button>
+            <div className={"event-dialog-visual " + (selectedEvent.visual || "visual-music")} aria-hidden="true"><span>{(selectedEvent.title || "EVTY").slice(0, 4).toUpperCase()}</span></div>
+            <div className="event-dialog-content">
+              <p className="eyebrow">EVENT DETAILS · {selectedEvent.city}</p>
+              <h2 id="event-dialog-title">{eventDetails?.title || selectedEvent.title}</h2>
+              {detailsLoading && <p className="event-dialog-status" role="status">Loading event details…</p>}
+              {detailsError && <p className="event-dialog-error" role="alert">{detailsError}</p>}
+              {eventDetails && (
+                <>
+                  <p id="event-dialog-description" className="event-dialog-description">{eventDetails.description || "Join the experience. Discover the details and choose the ticket that suits you."}</p>
+                  <div className="event-dialog-facts">
+                    <div><span>DATE & TIME</span><strong>{formatEventDate(eventDetails.startsAt)} · {formatEventTime(eventDetails.startsAt)}</strong></div>
+                    <div><span>VENUE</span><strong>{eventDetails.venueName}</strong><small>{eventDetails.city}</small></div>
+                  </div>
+                  <div className="event-dialog-tickets">
+                    <h3>Tickets</h3>
+                    {eventDetails.ticketTypes?.length ? eventDetails.ticketTypes.map((ticket) => {
+                      const available = Math.max(0, ticket.capacity - ticket.soldCount);
+                      return <div className="event-dialog-ticket" key={ticket.id}><div><strong>{ticket.name}</strong><small>{available > 0 ? available + " available" : "Sold out"}</small></div><b>{formatStartingPrice(ticket, eventDetails.currency).replace("From ", "")}</b></div>;
+                    }) : <p>Ticket options will be announced soon.</p>}
+                  </div>
+                </>
+              )}
+              <div className="event-dialog-actions">
+                <a className="button button-dark" href={"/events/" + encodeURIComponent(selectedEvent.id)}>Full event page <span aria-hidden="true">↗</span></a>
+                <button className="button button-outline" type="button" onClick={() => setSelectedEvent(null)}>Back to events</button>
+              </div>
+            </div>
+          </section>
+        </div>
+      )}
 
       <section className="host-banner" id="host">
         <div><span className="eyebrow">MADE FOR THE PEOPLE WHO MAKE IT HAPPEN</span><h2>Your event.<br /><em>Your kind of crowd.</em></h2><p>Bring your people together. Create an event, manage your tickets, and keep every moment moving with EVTY.</p></div>
