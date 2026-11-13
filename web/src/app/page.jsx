@@ -35,6 +35,13 @@ export default function HomePage() {
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [detailsError, setDetailsError] = useState("");
 
+  function openEventQuickView(event) {
+    setEventDetails(null);
+    setDetailsError("");
+    setDetailsLoading(true);
+    setSelectedEvent(event);
+  }
+
   useEffect(() => {
     const controller = new AbortController();
     const timer = window.setTimeout(async () => {
@@ -77,9 +84,6 @@ export default function HomePage() {
   useEffect(() => {
     if (!selectedEvent) return undefined;
     const controller = new AbortController();
-    setEventDetails(null);
-    setDetailsError("");
-    setDetailsLoading(true);
     fetch(apiBase + "/events/" + encodeURIComponent(selectedEvent.id), {
       headers: { Accept: "application/json" },
       signal: controller.signal,
@@ -196,14 +200,14 @@ export default function HomePage() {
           <div className="event-grid">
             {visibleEvents.map((event) => (
               <article className="event-card" key={event.id}>
-                <button className={"event-visual event-visual-button " + event.visual} type="button" onClick={() => setSelectedEvent(event)} aria-label={"Quick view: " + event.title} aria-haspopup="dialog">
+                <button className={"event-visual event-visual-button " + event.visual} type="button" onClick={() => openEventQuickView(event)} aria-label={"Quick view: " + event.title} aria-haspopup="dialog">
                   <span className="event-tag">{event.tag}</span>
                   <span className="visual-mark">{event.mark}</span>
                   <span className="visual-lines" aria-hidden="true" />
                   <span className="event-date">{event.date}</span>
                 </button>
                 <div className="event-meta"><span>EVENT</span><span>{event.city.toUpperCase()}</span></div>
-                <h3><button className="event-title-button" type="button" onClick={() => setSelectedEvent(event)} aria-haspopup="dialog">{event.title}</button></h3>
+                <h3><button className="event-title-button" type="button" onClick={() => openEventQuickView(event)} aria-haspopup="dialog">{event.title}</button></h3>
                 <p className="event-place">{event.place}</p>
                 <div className="event-bottom"><span>{event.time}</span><strong>{event.price}</strong></div>
               </article>
