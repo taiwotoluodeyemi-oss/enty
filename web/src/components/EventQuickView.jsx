@@ -81,6 +81,7 @@ export default function EventQuickView({ event }) {
                   <div className="event-dialog-facts">
                     <div><span>DATE & TIME</span><strong>{formatDate(details.startsAt)}</strong></div>
                     <div><span>VENUE</span><strong>{details.venueName}</strong><small>{details.city}</small></div>
+                    <div><span>ORGANISED BY</span><strong>{details.organizer?.displayName || "EVTY organiser"}</strong></div>
                   </div>
                   <div className="event-dialog-tickets">
                     <h3>Tickets</h3>
