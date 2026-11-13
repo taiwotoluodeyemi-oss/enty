@@ -143,3 +143,17 @@ export function verifyPaystackWebhookSignature(
     });
   });
 }
+
+/** Compatibility verifier for Paystack's legacy x-paystack-signature header.
+ * Prefer the timestamped Paystack-Signature header and dedicated webhook secret.
+ */
+export function verifyLegacyPaystackWebhookSignature(
+  rawBody: Buffer,
+  signatureHeader: string | undefined,
+  secretKey: string
+): boolean {
+  if (!signatureHeader || !/^[a-f0-9]{128}$/i.test(signatureHeader) || !secretKey) return false;
+  const expected = createHmac("sha512", secretKey).update(rawBody).digest();
+  const actual = Buffer.from(signatureHeader, "hex");
+  return actual.length === expected.length && timingSafeEqual(expected, actual);
+}
