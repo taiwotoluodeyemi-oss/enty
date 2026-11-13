@@ -269,6 +269,7 @@ app.get("/api/v1/events/:eventId", async (req, res, next) => {
       select: {
         id: true, title: true, description: true, venueName: true, city: true,
         startsAt: true, endsAt: true, currency: true, status: true,
+        organizer: { select: { displayName: true } },
         ticketTypes: {
           where: {
             AND: [
