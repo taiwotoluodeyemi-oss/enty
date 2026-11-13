@@ -123,6 +123,43 @@ Full vendor booking/payment workflows are deferred until core ticketing is prove
 - Every sensitive administrative action is attributable and audited.
 - Analytics include GMV, take rate, recognized revenue, conversion, CAC, repeat purchase, active organisers, sell-through, refund/chargeback rates, advertising ROAS, promoter conversion, gate success, settlement time, and customer satisfaction.
 
+
+### 4.12 Market-informed differentiators
+
+The global platform benchmark is maintained in [EVTY Global 100-Platform Benchmark](EVTY_GLOBAL_100_PLATFORM_BENCHMARK.md). The following requirements are adopted as EVTY product direction and must be delivered in priority order, subject to validation with launch-market users.
+
+**Attendee discovery and community**
+- Follow organisers, artists, venues and event series; provide preference-controlled event alerts.
+- Support recurring events, group attendance planning, shareable event cards and calendar export.
+- Offer low-bandwidth discovery pages and clear event accessibility, language, age and content information.
+- Provide curated collections and explainable recommendations; sponsored placement must always be labelled.
+
+**Fair ticket ownership**
+- Design a controlled waitlist and ticket-transfer model with explicit organiser policy, transfer audit history, old credential invalidation and anti-scalping limits.
+- Resale must be disabled until refund, fraud, payment reversal and transfer controls are implemented and tested.
+
+**Organiser operations**
+- Provide event task checklists, run-of-show, staff assignments, incident notes, supplier enquiries and budget-vs-actual reporting.
+- Keep ticket GMV, processor fees, tax, refunds, promoter liabilities, organiser payable balance and EVTY recognised revenue separate in every financial report.
+
+**Promoter and advertiser attribution**
+- Promoter links/QRs must attribute only eligible, verified paid orders and apply the commission rule snapshotted at campaign/order time.
+- Sponsored campaigns require budget controls, creative approval, clear ad labels and measurable impressions/clicks/conversions.
+- Fraud controls must detect self-referrals, repeated/automated traffic and suspicious conversion patterns before reward approval.
+
+**Vendor and sponsor workflows**
+- Begin with verified supplier profiles, service areas, portfolios, quote requests and lead tracking.
+- Sponsor/exhibitor reporting should provide consent-aware lead capture and proof-of-delivery; attendee data must not be sold or shared without an appropriate lawful basis and clear disclosure.
+
+**Gate reliability**
+- Scanner devices must be enrolled and assigned to specific events and roles.
+- Online redemption must be atomic and reject duplicate admissions.
+- Offline scanning is a separate high-risk capability requiring signed data, device allocation, expiry, encrypted queues, conflict reconciliation and adversarial testing; do not advertise it as secure until those controls pass.
+
+**Accessibility**
+- All core discovery, checkout, ticket-wallet and gate interfaces must support keyboard navigation, screen readers, contrast and scalable text.
+- Event organisers must be able to publish venue accessibility details and support arrangements.
+
 ## 5. Internationalization and market configuration
 
 Every relevant event/order/payment/settlement records:
