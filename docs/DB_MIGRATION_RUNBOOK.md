@@ -8,6 +8,21 @@
 - This is a reproducible fresh-database baseline, not the PostgreSQL production migration.
 - No existing database has been inspected, copied, baselined or migrated as part of this change.
 
+## PostgreSQL migration groundwork
+
+A separate PostgreSQL Prisma schema now exists at `prisma/postgresql/schema.prisma`, with its own migration lock and initial baseline at `prisma/postgresql/migrations/20261113000100_initial_evty/migration.sql`. The root `prisma/schema.prisma` and `prisma/migrations/` remain SQLite so existing development workflows are not silently broken.
+
+Available commands:
+
+- `npm run db:pg:validate`
+- `npm run db:pg:generate`
+- `npm run db:pg:deploy`
+
+The GitHub Actions workflow includes a disposable PostgreSQL service job to validate and apply this baseline. Confirm that job passes before using the Render database. The PostgreSQL schema is currently a parallel migration target; the running API still uses the root SQLite schema/client by default. Do not set the API's `DATABASE_URL` to PostgreSQL until the runtime cutover is implemented and verified.
+
+The Render Free database `evty-dev-postgres` is available for temporary testing and expires on 2026-12-13. Use its private/internal connection string only from a service in the same Render workspace/region. Keep credentials in Render environment settings; never commit them. The hosted database was not directly inspected or migrated during this change.
+
+
 ## Fresh development database
 
 1. Back up any existing local database before changing migration history.
