@@ -29,7 +29,11 @@ declare global {
 
 app.disable("x-powered-by");
 app.use(helmet());
-app.use(cors({ origin: process.env.CORS_ORIGIN?.split(",").map((origin) => origin.trim()) ?? false }));
+const allowedOrigins = process.env.CORS_ORIGIN?.split(",").map((origin) => origin.trim()).filter(Boolean) ?? [];
+if (process.env.NODE_ENV === "production" && allowedOrigins.length === 0) {
+  throw new Error("CORS_ORIGIN must list the trusted web origins in production");
+}
+app.use(cors({ origin: allowedOrigins.length ? allowedOrigins : false }));
 app.use(express.json({ limit: "256kb" }));
 
 function issueToken(user: { id: string; role: UserRole }): string {
@@ -69,6 +73,36 @@ function authenticate(req: Request, res: Response, next: NextFunction): void {
   }
 }
 
+type RateLimitBucket = { count: number; resetAt: number };
+
+function rateLimit(maxRequests: number, windowMs: number) {
+  const buckets = new Map<string, RateLimitBucket>();
+  return (req: Request, res: Response, next: NextFunction): void => {
+    const now = Date.now();
+    const key = req.ip || req.socket.remoteAddress || "unknown";
+    let bucket = buckets.get(key);
+    if (!bucket || bucket.resetAt <= now) {
+      bucket = { count: 0, resetAt: now + windowMs };
+      buckets.set(key, bucket);
+    }
+    bucket.count += 1;
+    res.setHeader("RateLimit-Limit", String(maxRequests));
+    res.setHeader("RateLimit-Remaining", String(Math.max(0, maxRequests - bucket.count)));
+    res.setHeader("RateLimit-Reset", String(Math.ceil(bucket.resetAt / 1000)));
+    if (bucket.count > maxRequests) {
+      res.setHeader("Retry-After", String(Math.max(1, Math.ceil((bucket.resetAt - now) / 1000))));
+      res.status(429).json({ error: { code: "RATE_LIMITED", message: "Too many requests. Please try again later." } });
+      return;
+    }
+    if (buckets.size > 10000) {
+      for (const [bucketKey, value] of buckets) {
+        if (value.resetAt <= now) buckets.delete(bucketKey);
+      }
+    }
+    next();
+  };
+}
+
 function requireRole(...roles: UserRole[]) {
   return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.auth || !roles.includes(req.auth.role)) {
@@ -99,7 +133,7 @@ const registerSchema = z.object({
   role: z.enum(["ATTENDEE", "ORGANIZER"]).default("ATTENDEE")
 });
 
-app.post("/api/v1/auth/register", async (req, res, next) => {
+app.post("/api/v1/auth/register", rateLimit(5, 15 * 60 * 1000), async (req, res, next) => {
   try {
     const parsed = registerSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -132,7 +166,7 @@ const loginSchema = z.object({
   password: z.string().min(1).max(128)
 });
 
-app.post("/api/v1/auth/login", async (req, res, next) => {
+app.post("/api/v1/auth/login", rateLimit(10, 15 * 60 * 1000), async (req, res, next) => {
   try {
     const parsed = loginSchema.safeParse(req.body);
     if (!parsed.success) {
