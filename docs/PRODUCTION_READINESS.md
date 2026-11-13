@@ -4,7 +4,7 @@ This is a release checklist, not a statement that EVTY already satisfies every i
 
 ## Release-blocking implementation and evidence
 
-- [ ] Replace SQLite with managed PostgreSQL; commit reviewed Prisma migrations and a tested data migration/recovery plan.
+- [ ] Replace SQLite with managed PostgreSQL; a fresh-database SQLite baseline is now checked in, but the PostgreSQL migration and tested data migration/recovery plan remain outstanding.
 - [ ] Complete email verification, password recovery, revocable sessions, rate limits backed by shared storage, lockout protections and privileged-user MFA.
 - [ ] Complete organiser/business verification, fine-grained admin permissions, event-scoped gate staff assignment and object-level authorization tests.
 - [ ] Implement expiring inventory reservations and atomic concurrency-safe capacity enforcement.
@@ -28,10 +28,10 @@ Record the commit SHA and environment, CI results, migration result, test report
 
 ## Known current limitations
 
-- The Prisma datasource is currently SQLite and there is no reviewed PostgreSQL migration set.
+- The Prisma datasource is currently SQLite. An initial SQLite migration and database runbook are committed; PostgreSQL migration/cutover is not yet implemented or tested.
 - Authentication rate limiting is currently process-local; multi-instance production requires a shared store.
 - Payment provider, merchant account, fee/funds-flow terms, commission policy, payout rules and launch market require explicit configuration and review.
-- The GitHub Actions workflow exists, but a passing run has not been verified in this editing session.
+- GitHub Actions now applies the checked-in migration to a fresh SQLite database before build/tests; the latest run has not yet been reported by GitHub, so migration/build/test success remains unverified.
 - No local build, test, migration, security, load, or deployment smoke-test result is claimed.
 
 A successful CI run is necessary but not sufficient for release. Do not represent EVTY as production-ready until the critical workflows above are implemented, independently reviewed and verified in a production-like environment.
