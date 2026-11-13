@@ -27,6 +27,12 @@ describe("Paystack webhook signature verification", () => {
     expect(verifyPaystackWebhookSignature(rawBody, signature(1000), ["old-secret", secret], 1000)).toBe(true);
   });
 
+  it("verifies the legacy x-paystack-signature format", () => {
+    const legacy = createHmac("sha512", "sk_test_example").update(rawBody).digest("hex");
+    expect(verifyLegacyPaystackWebhookSignature(rawBody, legacy, "sk_test_example")).toBe(true);
+    expect(verifyLegacyPaystackWebhookSignature(Buffer.from("tampered"), legacy, "sk_test_example")).toBe(false);
+  });
+
   it("rejects malformed or missing headers", () => {
     expect(verifyPaystackWebhookSignature(rawBody, undefined, [secret], 1000)).toBe(false);
     expect(verifyPaystackWebhookSignature(rawBody, "t=1000,v1=bad", [secret], 1000)).toBe(false);
