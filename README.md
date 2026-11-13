@@ -59,7 +59,7 @@ The preferred architecture includes a Next.js/React web client, Node.js API, Pos
 
 ## Product specification
 
-See [EVTY Product Requirements](docs/EVTY_PRODUCT_REQUIREMENTS.md) and [Architecture & Financial Safety](docs/ARCHITECTURE_AND_FINANCIAL_SAFETY.md).
+See [EVTY Product Requirements](docs/EVTY_PRODUCT_REQUIREMENTS.md), [Architecture & Financial Safety](docs/ARCHITECTURE_AND_FINANCIAL_SAFETY.md), and the [Global 100-Platform Benchmark](docs/EVTY_GLOBAL_100_PLATFORM_BENCHMARK.md) for competitive patterns, product opportunities, and prioritised roadmap.
 
 ## Status
 
