@@ -1,6 +1,6 @@
 import { createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { verifyPaystackWebhookSignature } from "../src/domain/payments/paystack.js";
+import { verifyLegacyPaystackWebhookSignature, verifyPaystackWebhookSignature } from "../src/domain/payments/paystack.js";
 
 describe("Paystack webhook signature verification", () => {
   const secret = "whsec_test_secret";
