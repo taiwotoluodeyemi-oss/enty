@@ -92,7 +92,7 @@ The first launch market remains Nigeria. International expansion should be enabl
 | 47 | Stova | Enterprise event operations | Portfolio management and onsite workflows |
 | 48 | EventsAir | Conferences and associations | Registration, abstract and speaker operations |
 | 49 | Accelevents | Hybrid and in-person events | Registration, onsite tools and sponsor experiences |
-| 50 | Eventzilla | Event registration and management | Self-service setup and attendee data operations |
+| 50 | Eventcube | Independent ticketing and event management | Branded ticketing, memberships and organiser tools |
 
 ### F. Open-source, developer-led and configurable event systems
 
@@ -122,7 +122,7 @@ The first launch market remains Nigeria. International expansion should be enabl
 | 67 | Etix | Venues and live events | Box office and distribution operations |
 | 68 | TicketWeb | Clubs and venues | Venue-led event discovery and ticket sales |
 | 69 | Eventix | Festivals and events | Ticketing, marketing and event operations |
-| 70 | Tixly | Theatre and venue ticketing | Customer accounts, subscriptions and seat management |
+| 70 | TicketCo | Event ticketing and cashless payments | Ticketing, access and onsite payment workflows |
 
 ### H. Virtual, hybrid and audience engagement
 
@@ -146,7 +146,7 @@ The first launch market remains Nigeria. International expansion should be enabl
 | 81 | SeatGeek Enterprise | Sports and venue ticketing | Venue inventory, seat maps and fan commerce |
 | 82 | Paciolan | College sports and performing arts | Institutional ticketing, fundraising and CRM |
 | 83 | Tickets.com | Sports and performing arts | Venue systems and primary ticket distribution |
-| 84 | TicketSpice | Admissions and events | Configurable checkout and ticket products |
+| 84 | Humanitix | Ticketing with social-impact model | Transparent impact positioning and organiser experience |
 | 85 | TodayTix | Theatre discovery | Last-minute inventory and theatre-specific discovery |
 | 86 | TixTrack | Performing arts ticketing | Venue ticketing and customer operations |
 | 87 | Gateway Ticketing Systems | Attractions and venues | Timed entry, memberships and access control |
