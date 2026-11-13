@@ -1,80 +1,88 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-const categories = ["All events", "Music", "Technology", "Arts & culture", "Business", "Food & drink"];
+const cityFilters = ["All events", "Lagos", "Abuja", "Port Harcourt"];
+const visualStyles = ["visual-music", "visual-tech", "visual-art", "visual-business"];
+const apiBase = (process.env.NEXT_PUBLIC_EVTY_API_URL || "http://localhost:4000/api/v1").replace(/\/+$/, "");
 
-const events = [
-  {
-    id: "lagos-live",
-    title: "Lagos Live: The City Sessions",
-    category: "Music",
-    date: "NOV 22",
-    time: "7:00 PM",
-    place: "Muri Okunola Park, Victoria Island",
-    city: "Lagos",
-    price: "From ₦8,500",
-    tag: "Trending",
-    visual: "visual-music",
-    mark: "LIVE",
-  },
-  {
-    id: "build-africa",
-    title: "Build Africa Summit 2026",
-    category: "Technology",
-    date: "DEC 04",
-    time: "9:00 AM",
-    place: "Landmark Event Centre",
-    city: "Lagos",
-    price: "From ₦25,000",
-    tag: "Featured",
-    visual: "visual-tech",
-    mark: "BA",
-  },
-  {
-    id: "art-after-hours",
-    title: "Art After Hours",
-    category: "Arts & culture",
-    date: "NOV 29",
-    time: "6:30 PM",
-    place: "Thought Pyramid Art Centre",
-    city: "Abuja",
-    price: "From ₦5,000",
-    tag: "Just added",
-    visual: "visual-art",
-    mark: "A/H",
-  },
-  {
-    id: "founders-table",
-    title: "The Founders’ Table",
-    category: "Business",
-    date: "DEC 12",
-    time: "5:00 PM",
-    place: "The Wheatbaker",
-    city: "Lagos",
-    price: "From ₦15,000",
-    tag: "Limited seats",
-    visual: "visual-business",
-    mark: "FT",
-  },
-];
+function formatEventDate(value) {
+  return new Intl.DateTimeFormat("en-NG", { month: "short", day: "2-digit" }).format(new Date(value)).toUpperCase();
+}
+
+function formatEventTime(value) {
+  return new Intl.DateTimeFormat("en-NG", { hour: "numeric", minute: "2-digit" }).format(new Date(value));
+}
+
+function formatStartingPrice(ticketType, eventCurrency) {
+  if (!ticketType) return "Tickets coming soon";
+  return "From " + new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency: ticketType.currency || eventCurrency,
+    maximumFractionDigits: 2
+  }).format(ticketType.priceMinor / 100);
+}
 
 export default function HomePage() {
   const [query, setQuery] = useState("");
-  const [category, setCategory] = useState("All events");
+  const [city, setCity] = useState("All events");
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [reload, setReload] = useState(0);
 
-  const visibleEvents = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
-    return events.filter((event) => {
-      const categoryMatches = category === "All events" || event.category === category;
-      const queryMatches =
-        !normalized ||
-        [event.title, event.category, event.place, event.city].some((value) =>
-          value.toLowerCase().includes(normalized),
-        );
-      return categoryMatches && queryMatches;
-    });
-  }, [query, category]);
+  useEffect(() => {
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setLoading(true);
+      setError("");
+      try {
+        const url = new URL(apiBase + "/events");
+        const normalizedQuery = query.trim();
+        if (normalizedQuery) url.searchParams.set("q", normalizedQuery);
+        if (city !== "All events") url.searchParams.set("city", city);
+        url.searchParams.set("page", "1");
+        url.searchParams.set("limit", "24");
+
+        const response = await fetch(url.toString(), {
+          method: "GET",
+          headers: { Accept: "application/json" },
+          signal: controller.signal,
+          cache: "no-store"
+        });
+        if (!response.ok) throw new Error("The event service returned an error. Please try again.");
+        const payload = await response.json();
+        if (!Array.isArray(payload.data)) throw new Error("The event service returned an unexpected response.");
+        setEvents(payload.data);
+      } catch (requestError) {
+        if (requestError.name !== "AbortError") {
+          setEvents([]);
+          setError(requestError.message || "EVTY could not load events. Please try again.");
+        }
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    }, 220);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [query, city, reload]);
+
+  const visibleEvents = useMemo(() => events.map((event, index) => {
+    const ticketType = event.ticketTypes?.[0];
+    return {
+      ...event,
+      date: formatEventDate(event.startsAt),
+      time: formatEventTime(event.startsAt),
+      place: event.venueName + ", " + event.city,
+      price: formatStartingPrice(ticketType, event.currency),
+      tag: ticketType ? "Tickets available" : "Coming soon",
+      visual: visualStyles[index % visualStyles.length],
+      mark: event.title.slice(0, 4).toUpperCase()
+    };
+  }), [events]);
 
   return (
     <main>
@@ -85,7 +93,7 @@ export default function HomePage() {
         </a>
         <nav className="desktop-nav" aria-label="Main navigation">
           <a className="active" href="#discover">Discover</a>
-          <a href="#categories">Categories</a>
+          <a href="#categories">Cities</a>
           <a href="#host">Host an event</a>
         </nav>
         <div className="header-actions">
@@ -133,33 +141,42 @@ export default function HomePage() {
       </section>
 
       <section className="events-section" id="event-list">
-        <div className="section-topline"><span className="eyebrow">CURATED FOR YOU</span><span className="section-note">THE GOOD STUFF, ALL IN ONE PLACE</span></div>
+        <div className="section-topline"><span className="eyebrow">LIVE EVENT LISTINGS</span><span className="section-note">PUBLISHED EVENTS FROM EVTY ORGANISERS</span></div>
         <div className="section-heading">
           <h2>What’s happening<span className="heading-dot">.</span></h2>
-          <p>From spontaneous plans to nights you’ll remember.<br />There’s something with your name on it.</p>
+          <p>Real listings, current ticket availability, and clear prices.<br />Find the next reason to get together.</p>
         </div>
-        <div className="category-tabs" id="categories" role="group" aria-label="Filter events by category">
-          {categories.map((item) => (
-            <button key={item} type="button" className={category === item ? "category active" : "category"} onClick={() => setCategory(item)}>{item}</button>
+        <div className="category-tabs" id="categories" role="group" aria-label="Filter events by city">
+          {cityFilters.map((item) => (
+            <button key={item} type="button" className={city === item ? "category active" : "category"} onClick={() => setCity(item)}>{item}</button>
           ))}
         </div>
-        <div className="event-grid">
-          {visibleEvents.map((event) => (
-            <article className="event-card" key={event.id}>
-              <a className={`event-visual ${event.visual}`} href={`/events/${event.id}`} aria-label={`View ${event.title}`}>
-                <span className="event-tag">{event.tag}</span>
-                <span className="visual-mark">{event.mark}</span>
-                <span className="visual-lines" aria-hidden="true" />
-                <span className="event-date">{event.date}</span>
-              </a>
-              <div className="event-meta"><span>{event.category.toUpperCase()}</span><span>{event.city.toUpperCase()}</span></div>
-              <h3><a href={`/events/${event.id}`}>{event.title}</a></h3>
-              <p className="event-place">{event.place}</p>
-              <div className="event-bottom"><span>{event.time}</span><strong>{event.price}</strong></div>
-            </article>
-          ))}
-          {visibleEvents.length === 0 && <p className="empty-state">No events match that search yet. Try another term or category.</p>}
-        </div>
+        {loading && <p className="empty-state" role="status">Finding events for you…</p>}
+        {error && (
+          <div className="empty-state" role="alert">
+            <p>{error}</p>
+            <button className="button button-outline" type="button" onClick={() => setReload((value) => value + 1)}>Try again</button>
+          </div>
+        )}
+        {!loading && !error && (
+          <div className="event-grid">
+            {visibleEvents.map((event) => (
+              <article className="event-card" key={event.id}>
+                <a className={"event-visual " + event.visual} href={"/events/" + encodeURIComponent(event.id)} aria-label={"View " + event.title}>
+                  <span className="event-tag">{event.tag}</span>
+                  <span className="visual-mark">{event.mark}</span>
+                  <span className="visual-lines" aria-hidden="true" />
+                  <span className="event-date">{event.date}</span>
+                </a>
+                <div className="event-meta"><span>EVENT</span><span>{event.city.toUpperCase()}</span></div>
+                <h3><a href={"/events/" + encodeURIComponent(event.id)}>{event.title}</a></h3>
+                <p className="event-place">{event.place}</p>
+                <div className="event-bottom"><span>{event.time}</span><strong>{event.price}</strong></div>
+              </article>
+            ))}
+            {visibleEvents.length === 0 && <p className="empty-state">No published events match that search yet. Try another city or search term.</p>}
+          </div>
+        )}
         <div className="browse-more"><a className="button button-outline" href="/events">Explore all events <span aria-hidden="true">→</span></a></div>
       </section>
 
