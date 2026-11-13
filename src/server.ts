@@ -164,6 +164,18 @@ const createEventSchema = z.object({
   path: ["endsAt"]
 });
 
+const updateDraftEventSchema = z.object({
+  title: z.string().trim().min(3).max(160).optional(),
+  description: z.string().trim().max(10000).optional(),
+  venueName: z.string().trim().min(1).max(200).optional(),
+  city: z.string().trim().min(1).max(120).optional(),
+  startsAt: z.string().datetime().optional(),
+  endsAt: z.string().datetime().optional(),
+  currency: z.string().length(3).transform((value) => value.toUpperCase()).optional()
+}).refine((value) => Object.keys(value).length > 0, {
+  message: "Provide at least one event field to update"
+});
+
 const eventListQuerySchema = z.object({
   q: z.string().trim().max(120).optional(),
   city: z.string().trim().max(120).optional(),
@@ -330,6 +342,77 @@ app.post(
   }
 );
 
+app.patch("/api/v1/events/:eventId", authenticate, requireRole("ORGANIZER"), async (req, res, next) => {
+  try {
+    const eventId = eventIdSchema.safeParse(req.params.eventId);
+    const parsed = updateDraftEventSchema.safeParse(req.body);
+    if (!eventId.success) {
+      res.status(400).json({ error: { code: "INVALID_EVENT_ID", message: "The event identifier is invalid" } });
+      return;
+    }
+    if (!parsed.success) {
+      res.status(400).json({ error: { code: "VALIDATION_ERROR", details: parsed.error.flatten() } });
+      return;
+    }
+    const existing = await prisma.event.findFirst({
+      where: { id: eventId.data, organizerId: req.auth!.userId, status: "DRAFT" },
+      select: { id: true, startsAt: true, endsAt: true, currency: true, _count: { select: { ticketTypes: true } } }
+    });
+    if (!existing) {
+      res.status(404).json({ error: { code: "DRAFT_EVENT_NOT_FOUND", message: "A draft event owned by your account was not found" } });
+      return;
+    }
+    const startsAt = parsed.data.startsAt ? new Date(parsed.data.startsAt) : existing.startsAt;
+    const endsAt = parsed.data.endsAt ? new Date(parsed.data.endsAt) : existing.endsAt;
+    if (endsAt <= startsAt) {
+      res.status(400).json({ error: { code: "INVALID_EVENT_DATES", message: "Event end must be after event start" } });
+      return;
+    }
+    if (parsed.data.currency && parsed.data.currency !== existing.currency && existing._count.ticketTypes > 0) {
+      res.status(409).json({ error: { code: "CURRENCY_LOCKED", message: "Event currency cannot change after ticket types have been created" } });
+      return;
+    }
+    const updated = await prisma.$transaction(async (tx) => {
+      const result = await tx.event.updateMany({
+        where: { id: existing.id, organizerId: req.auth!.userId, status: "DRAFT" },
+        data: {
+          ...(parsed.data.title !== undefined ? { title: parsed.data.title } : {}),
+          ...(parsed.data.description !== undefined ? { description: parsed.data.description } : {}),
+          ...(parsed.data.venueName !== undefined ? { venueName: parsed.data.venueName } : {}),
+          ...(parsed.data.city !== undefined ? { city: parsed.data.city } : {}),
+          ...(parsed.data.startsAt !== undefined ? { startsAt } : {}),
+          ...(parsed.data.endsAt !== undefined ? { endsAt } : {}),
+          ...(parsed.data.currency !== undefined ? { currency: parsed.data.currency } : {})
+        }
+      });
+      if (result.count !== 1) throw new Error("DRAFT_EVENT_UPDATE_CONFLICT");
+      await tx.auditLog.create({
+        data: {
+          actorId: req.auth!.userId,
+          action: "DRAFT_EVENT_UPDATED",
+          resourceType: "Event",
+          resourceId: existing.id,
+          metadata: JSON.stringify({ fields: Object.keys(parsed.data) })
+        }
+      });
+      return tx.event.findUnique({
+        where: { id: existing.id },
+        select: {
+          id: true, organizerId: true, title: true, description: true, venueName: true,
+          city: true, startsAt: true, endsAt: true, currency: true, status: true, updatedAt: true
+        }
+      });
+    });
+    res.json({ data: updated });
+  } catch (error) {
+    if (error instanceof Error && error.message === "DRAFT_EVENT_UPDATE_CONFLICT") {
+      res.status(409).json({ error: { code: "DRAFT_EVENT_UPDATE_CONFLICT", message: "The event changed while it was being updated. Refresh and try again." } });
+      return;
+    }
+    next(error);
+  }
+});
+
 app.post("/api/v1/events/:eventId/ticket-types", authenticate, requireRole("ORGANIZER"), async (req, res, next) => {
   try {
     const eventId = eventIdSchema.safeParse(req.params.eventId);
@@ -385,7 +468,7 @@ app.post("/api/v1/events/:eventId/submit", authenticate, requireRole("ORGANIZER"
     }
     const event = await prisma.event.findFirst({
       where: { id: eventId.data, organizerId: req.auth!.userId },
-      select: { id: true, status: true, title: true }
+      select: { id: true, status: true, title: true, _count: { select: { ticketTypes: true } } }
     });
     if (!event) {
       res.status(404).json({ error: { code: "EVENT_NOT_FOUND", message: "The event was not found in your organiser account" } });
@@ -393,6 +476,10 @@ app.post("/api/v1/events/:eventId/submit", authenticate, requireRole("ORGANIZER"
     }
     if (event.status !== "DRAFT") {
       res.status(409).json({ error: { code: "EVENT_NOT_DRAFT", message: "Only draft events can be submitted for review" } });
+      return;
+    }
+    if (event._count.ticketTypes < 1) {
+      res.status(409).json({ error: { code: "TICKET_TYPES_REQUIRED", message: "Add at least one ticket type before submitting this event for review" } });
       return;
     }
     const updated = await prisma.$transaction(async (tx) => {
