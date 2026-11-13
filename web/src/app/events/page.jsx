@@ -1,4 +1,5 @@
 import Link from "next/link";
+import EventQuickView from "../../components/EventQuickView";
 
 const apiBase = (process.env.EVTY_API_URL || process.env.NEXT_PUBLIC_EVTY_API_URL || "http://localhost:4000/api/v1").replace(/\/+$/, "");
 
@@ -65,6 +66,7 @@ export default async function EventsPage({ searchParams }) {
                   <Link href={"/events/" + encodeURIComponent(event.id)} style={{ color: "inherit", textDecoration: "none" }}>{event.title}</Link>
                 </h2>
                 <p style={{ fontSize: 13, color: "#777872" }}>{event.venueName}</p>
+                <EventQuickView event={event} />
                 <div style={{ borderTop: "1px solid #e5e3dd", paddingTop: 14, marginTop: 18, display: "flex", justifyContent: "space-between", gap: 10, fontSize: 12 }}>
                   <span>{formatPrice(event.ticketTypes?.[0], event.currency)}</span>
                   <Link href={"/events/" + encodeURIComponent(event.id)} style={{ color: "#52651f", fontWeight: 700 }}>Details →</Link>
