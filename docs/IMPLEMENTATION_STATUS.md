@@ -2,36 +2,53 @@
 
 This file separates repository implementation from product ambition. Update it as code and tests are delivered.
 
-## Foundation landed
+## Implemented in the repository
 
-- TypeScript/Node API package, development/build/test scripts.
-- Express API bootstrap with Helmet, bounded JSON body parsing, configured CORS, safe generic error response, graceful shutdown.
-- Liveness endpoint `GET /health` and database check `GET /health/db`.
-- Prisma relational schema baseline for users, events, ticket types, orders, order items, tickets, ledger entries, commission agreements, promoter attribution and audit logs.
-- Initial event listing endpoint restricted to published events.
+- TypeScript/Node API foundation with Express, Prisma, Zod validation, Helmet, bounded JSON parsing, safe generic errors, and graceful shutdown.
+- Health endpoints for application liveness and database connectivity.
+- Account registration/login with bcrypt password hashing and short-lived JWT access tokens.
+- Authentication endpoint rate limiting with standard rate-limit response headers. The current limiter is in-memory and per API process; it is not sufficient as the only control for a multi-instance production deployment.
+- Production startup requires a JWT secret of at least 32 characters and an explicit trusted CORS origin list.
+- Organiser event creation, draft editing, ticket-category creation, and submission for review.
+- Admin event approval/return-to-draft workflow with audit records.
+- Public event discovery, filtering, pagination, event detail and ticket availability API.
+- Homepage and all-events directory connected to the public API, including responsive event quick-view dialogs and full event detail routes.
+- Public event detail responses include organiser display name.
 - Integer minor-unit money helper and unit tests.
-- Environment example and ignore rules.
-- Account registration and login endpoints using bcrypt password hashing and short-lived signed JWT access tokens.
-- Event creation requires a valid bearer token and the ORGANIZER role. The organizer ID is derived from the verified token, not request input.
-- Production startup refuses to run without a configured JWT secret of at least 32 characters.
-- GitHub Actions CI workflow now runs Prisma validation/client generation, API build/tests, and web lint/build for pushes and pull requests targeting `main`.
+- Fixed-window rate-limit domain helper and unit tests.
+- GitHub Actions workflow for Prisma validation/client generation, API build/tests, and web lint/build on pushes and pull requests to `main`.
+- Product requirements, financial-safety architecture, upstream integration review, attendee discovery notes, and release checklist.
 
 ## Still not production-ready
 
-This is an initial backend foundation, not a complete launch-ready product. Remaining work includes:
+### Identity, access and trust
+- Email verification, password reset/recovery, revocable refresh sessions, MFA for privileged roles, lockout/credential-stuffing controls, and account lifecycle.
+- Fine-grained admin permissions, organiser/business verification, event-scoped gate staff assignment, and complete object-level authorization tests.
+- A distributed rate limiter (for example Redis-backed) and proxy-aware trusted client IP configuration for multi-instance deployments.
 
-- Authentication hardening: rate limits, email verification, password reset, refresh-token/session revocation, MFA for privileged users, and account lockout protections.
-- Authorization and moderation: organizer membership, event staff permissions, organizer verification, admin permissions, event publishing/review, and object-level authorization coverage.
-- Database: production PostgreSQL configuration, committed Prisma migrations, backup/restore drills, migration rollback/recovery plan, and production data policies.
-- Ticketing: atomic inventory reservation, order lifecycle, secure QR token issuance, duplicate-scan prevention, gate staff access, offline scan reconciliation, and attendee ticket views.
-- Payments and money: provider adapters, trusted server-side payment verification, signed webhook handling, idempotency, double-entry ledger invariants, reconciliation, refunds, settlement, commission and promoter payout controls.
-- Marketplace: promotions, advertiser products, vendor listings, notifications, dispute and support workflows.
-- Interfaces: the separate `web/` Next.js discovery UI is still illustrative, is not API-connected, and does not implement attendee checkout, organizer workflows, gate staff, or admin web experiences.
-- Operations: structured request logging and correlation IDs, metrics, alerting, runbooks, incident response, privacy and retention controls, deployment configuration, and end-to-end tests.
-- Security, load, accessibility, and payment-provider certification testing.
+### Database and operations
+- Move from the current SQLite development schema to managed PostgreSQL using reviewed, committed migrations and a tested data migration plan.
+- Migration deploy/rollback/recovery, backup/restore drills, database connection management, and production data retention controls.
+- Structured request IDs, metrics, alerting, operational dashboards, incident runbooks, and dead-letter/reconciliation jobs.
+- CI has not been executed or inspected as passing in this editing session. No local build, test, migration, security scan, or deployment smoke-test result is claimed.
+
+### Ticket commerce and finance
+- Atomic expiring inventory reservations, order lifecycle, checkout, and payment provider integration.
+- Server-side payment verification, signed/replay-protected webhooks, idempotent fulfillment, and provider reconciliation.
+- Immutable balanced double-entry ledger, negotiated commission snapshots per order, refunds, chargebacks, settlements, and payout controls.
+- Ticket issuance after verified payment, attendee ticket wallet, secure QR credentials, event-scoped gate validation, duplicate-scan rejection, and offline scan policy.
+
+### Product interfaces and marketplace
+- Attendee checkout, order history, ticket wallet, refunds and account settings.
+- Complete organiser portal for event operations, orders, attendee exports, sales reporting and settlement statements.
+- Gate staff scanner, admin operations portal, promoter dashboard, advertiser campaign workflow, vendor directory and enquiry workflow.
+- Event poster/media uploads, object storage, moderation and notification channels.
+- Android/iOS clients and release pipelines.
+
+## Important launch boundary
+
+The event quick-view shows public event details and ticket availability only. It does not reserve inventory, accept payment, or issue an admission ticket. Do not enable live ticket sales until the payment, inventory, ledger, ticket issuance, refund, reconciliation, security and operational acceptance gates have evidence attached.
 
 ## Verification
 
-The GitHub Actions workflow has been added but has not yet run in this editing session. No local Git checkout or execution environment was available here, so no build, test, migration, security, or deployment smoke-test result is claimed. A successful CI run is necessary but not sufficient for release. Use the [Production Readiness Gate](PRODUCTION_READINESS.md) to track remaining acceptance evidence.
-
-Do not represent this repository as production-ready until the critical workflows above have been implemented, verified in a production-like environment, and independently reviewed.
+The GitHub Actions workflow is configured, but its current run result has not been verified in this editing session. GitHub commit status results available during this session did not report passing checks. No claim is made that the latest changes compile, pass tests, or are deployed. See [Production Readiness Gate](PRODUCTION_READINESS.md) for release evidence requirements.
