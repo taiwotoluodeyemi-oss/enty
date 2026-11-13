@@ -55,7 +55,7 @@ Security, payment, concurrency, QR, refund, recovery and load testing; pilot org
 
 ## Technical direction
 
-The preferred architecture includes a Next.js/React web client, Node.js API, PostgreSQL, Redis, object storage, provider abstraction, and OpenAPI. The repository currently keeps the Express/Prisma API at its root and now includes a separate `web/` Next.js discovery UI workspace. The frontend is a design foundation with illustrative listings; it is not yet integrated with checkout, payment, inventory, or organizer workflows.
+The preferred architecture includes a Next.js/React web client, Node.js API, PostgreSQL, Redis, object storage, provider abstraction, and OpenAPI. The repository currently keeps the Express/Prisma API at its root and now includes a separate `web/` Next.js discovery UI workspace. The frontend now loads published event listings and ticket availability from the EVTY API and provides live event-detail pages. Checkout, payment, inventory reservation, ticket issuance, and full organizer workflows remain under implementation.
 
 ## Product specification
 
