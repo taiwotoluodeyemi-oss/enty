@@ -16,6 +16,7 @@ This file separates repository implementation from product ambition. Update it a
 - Public event detail responses include organiser display name.
 - Integer minor-unit money helper and unit tests.
 - Fixed-window rate-limit domain helper and unit tests.
+- Paystack server-side transaction initialize/verify adapter and timestamped plus legacy webhook-signature verification helpers, with unit tests. This adapter is not connected to order checkout or ticket fulfillment.
 - GitHub Actions workflow for Prisma validation/client generation, API build/tests, and web lint/build on pushes and pull requests to `main`.
 - Product requirements, financial-safety architecture, upstream integration review, attendee discovery notes, and release checklist.
 
@@ -34,7 +35,7 @@ This file separates repository implementation from product ambition. Update it a
 
 ### Ticket commerce and finance
 - Atomic expiring inventory reservations, order lifecycle, checkout, and payment provider integration.
-- Server-side payment verification, signed/replay-protected webhooks, idempotent fulfillment, and provider reconciliation.
+- Wire the Paystack adapter into durable order/payment workflows; implement raw-body webhook intake, persistent replay/deduplication, idempotent fulfillment and provider reconciliation.
 - Immutable balanced double-entry ledger, negotiated commission snapshots per order, refunds, chargebacks, settlements, and payout controls.
 - Ticket issuance after verified payment, attendee ticket wallet, secure QR credentials, event-scoped gate validation, duplicate-scan rejection, and offline scan policy.
 
