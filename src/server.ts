@@ -85,7 +85,7 @@ app.get("/health", (_req, res) => {
 
 app.get("/health/db", async (_req, res) => {
   try {
-    await prisma.$queryRaw`SELECT 1`;
+    await prisma.$queryRaw\`SELECT 1\`;
     res.status(200).json({ status: "ok", database: "connected" });
   } catch {
     res.status(503).json({ status: "unavailable", database: "disconnected" });
@@ -164,15 +164,133 @@ const createEventSchema = z.object({
   path: ["endsAt"]
 });
 
-app.get("/api/v1/events", async (_req, res, next) => {
+const eventListQuerySchema = z.object({
+  q: z.string().trim().max(120).optional(),
+  city: z.string().trim().max(120).optional(),
+  from: z.string().datetime().optional(),
+  to: z.string().datetime().optional(),
+  page: z.coerce.number().int().min(1).max(10000).default(1),
+  limit: z.coerce.number().int().min(1).max(50).default(12)
+}).refine((value) => !value.from || !value.to || new Date(value.to) >= new Date(value.from), {
+  message: "The end of the date range must not be before its start",
+  path: ["to"]
+});
+
+const eventIdSchema = z.string().trim().min(1).max(64);
+
+const createTicketTypeSchema = z.object({
+  name: z.string().trim().min(2).max(100),
+  description: z.string().trim().max(1000).optional(),
+  priceMinor: z.number().int().min(0).max(2_000_000_000),
+  capacity: z.number().int().min(1).max(10_000_000),
+  currency: z.string().length(3).transform((value) => value.toUpperCase()).optional(),
+  salesStart: z.string().datetime().optional(),
+  salesEnd: z.string().datetime().optional()
+}).refine((value) => !value.salesStart || !value.salesEnd || new Date(value.salesEnd) > new Date(value.salesStart), {
+  message: "Ticket sales must end after they start",
+  path: ["salesEnd"]
+});
+
+app.get("/api/v1/events", async (req, res, next) => {
   try {
-    const events = await prisma.event.findMany({
-      where: { status: "PUBLISHED" },
-      orderBy: { startsAt: "asc" },
-      take: 50,
+    const parsed = eventListQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      res.status(400).json({ error: { code: "VALIDATION_ERROR", details: parsed.error.flatten() } });
+      return;
+    }
+    const { q, city, from, to, page, limit } = parsed.data;
+    const where = {
+      status: "PUBLISHED" as const,
+      ...(city ? { city: { contains: city } } : {}),
+      ...(from || to ? { startsAt: { ...(from ? { gte: new Date(from) } : {}), ...(to ? { lte: new Date(to) } : {}) } } : {}),
+      ...(q ? {
+        OR: [
+          { title: { contains: q } },
+          { description: { contains: q } },
+          { venueName: { contains: q } },
+          { city: { contains: q } }
+        ]
+      } : {})
+    };
+    const [events, total] = await prisma.$transaction([
+      prisma.event.findMany({
+        where,
+        orderBy: [{ startsAt: "asc" }, { id: "asc" }],
+        skip: (page - 1) * limit,
+        take: limit,
+        select: {
+          id: true, title: true, description: true, venueName: true, city: true,
+          startsAt: true, endsAt: true, currency: true, status: true
+        }
+      }),
+      prisma.event.count({ where })
+    ]);
+    res.json({
+      data: events,
+      meta: { page, limit, total, totalPages: Math.ceil(total / limit), hasNextPage: page * limit < total }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get("/api/v1/events/:eventId", async (req, res, next) => {
+  try {
+    const eventId = eventIdSchema.safeParse(req.params.eventId);
+    if (!eventId.success) {
+      res.status(400).json({ error: { code: "INVALID_EVENT_ID", message: "The event identifier is invalid" } });
+      return;
+    }
+    const event = await prisma.event.findFirst({
+      where: { id: eventId.data, status: "PUBLISHED" },
       select: {
         id: true, title: true, description: true, venueName: true, city: true,
-        startsAt: true, endsAt: true, currency: true, status: true
+        startsAt: true, endsAt: true, currency: true, status: true,
+        ticketTypes: {
+          where: {
+            AND: [
+              { OR: [{ salesStart: null }, { salesStart: { lte: new Date() } }] },
+              { OR: [{ salesEnd: null }, { salesEnd: { gt: new Date() } }] }
+            ]
+          },
+          orderBy: [{ priceMinor: "asc" }, { id: "asc" }],
+          select: {
+            id: true, name: true, description: true, priceMinor: true, currency: true,
+            capacity: true, soldCount: true, salesStart: true, salesEnd: true
+          }
+        }
+      }
+    });
+    if (!event) {
+      res.status(404).json({ error: { code: "EVENT_NOT_FOUND", message: "This event is not available" } });
+      return;
+    }
+    res.json({
+      data: {
+        ...event,
+        ticketTypes: event.ticketTypes.map((ticketType) => ({
+          ...ticketType,
+          available: Math.max(0, ticketType.capacity - ticketType.soldCount)
+        }))
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get("/api/v1/organizer/events", authenticate, requireRole("ORGANIZER"), async (req, res, next) => {
+  try {
+    const events = await prisma.event.findMany({
+      where: { organizerId: req.auth!.userId },
+      orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+      select: {
+        id: true, title: true, venueName: true, city: true, startsAt: true, endsAt: true,
+        currency: true, status: true, createdAt: true, updatedAt: true,
+        ticketTypes: {
+          orderBy: { createdAt: "asc" },
+          select: { id: true, name: true, priceMinor: true, currency: true, capacity: true, soldCount: true }
+        }
       }
     });
     res.json({ data: events });
@@ -211,6 +329,103 @@ app.post(
     }
   }
 );
+
+app.post("/api/v1/events/:eventId/ticket-types", authenticate, requireRole("ORGANIZER"), async (req, res, next) => {
+  try {
+    const eventId = eventIdSchema.safeParse(req.params.eventId);
+    const parsed = createTicketTypeSchema.safeParse(req.body);
+    if (!eventId.success) {
+      res.status(400).json({ error: { code: "INVALID_EVENT_ID", message: "The event identifier is invalid" } });
+      return;
+    }
+    if (!parsed.success) {
+      res.status(400).json({ error: { code: "VALIDATION_ERROR", details: parsed.error.flatten() } });
+      return;
+    }
+    const event = await prisma.event.findFirst({
+      where: { id: eventId.data, organizerId: req.auth!.userId, status: "DRAFT" },
+      select: { id: true, currency: true }
+    });
+    if (!event) {
+      res.status(404).json({ error: { code: "DRAFT_EVENT_NOT_FOUND", message: "A draft event owned by your account was not found" } });
+      return;
+    }
+    if (parsed.data.currency && parsed.data.currency !== event.currency) {
+      res.status(400).json({ error: { code: "CURRENCY_MISMATCH", message: "Ticket currency must match the event currency" } });
+      return;
+    }
+    const ticketType = await prisma.ticketType.create({
+      data: {
+        eventId: event.id,
+        name: parsed.data.name,
+        description: parsed.data.description,
+        priceMinor: parsed.data.priceMinor,
+        capacity: parsed.data.capacity,
+        currency: event.currency,
+        salesStart: parsed.data.salesStart ? new Date(parsed.data.salesStart) : null,
+        salesEnd: parsed.data.salesEnd ? new Date(parsed.data.salesEnd) : null
+      },
+      select: {
+        id: true, eventId: true, name: true, description: true, priceMinor: true,
+        currency: true, capacity: true, soldCount: true, salesStart: true, salesEnd: true
+      }
+    });
+    res.status(201).json({ data: ticketType });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post("/api/v1/events/:eventId/submit", authenticate, requireRole("ORGANIZER"), async (req, res, next) => {
+  try {
+    const eventId = eventIdSchema.safeParse(req.params.eventId);
+    if (!eventId.success) {
+      res.status(400).json({ error: { code: "INVALID_EVENT_ID", message: "The event identifier is invalid" } });
+      return;
+    }
+    const event = await prisma.event.findFirst({
+      where: { id: eventId.data, organizerId: req.auth!.userId },
+      select: { id: true, status: true, title: true }
+    });
+    if (!event) {
+      res.status(404).json({ error: { code: "EVENT_NOT_FOUND", message: "The event was not found in your organiser account" } });
+      return;
+    }
+    if (event.status !== "DRAFT") {
+      res.status(409).json({ error: { code: "EVENT_NOT_DRAFT", message: "Only draft events can be submitted for review" } });
+      return;
+    }
+    const updated = await prisma.$transaction(async (tx) => {
+      const result = await tx.event.updateMany({
+        where: { id: event.id, organizerId: req.auth!.userId, status: "DRAFT" },
+        data: { status: "PENDING_REVIEW" }
+      });
+      if (result.count !== 1) {
+        throw new Error("EVENT_SUBMISSION_CONFLICT");
+      }
+      await tx.auditLog.create({
+        data: {
+          actorId: req.auth!.userId,
+          action: "EVENT_SUBMITTED_FOR_REVIEW",
+          resourceType: "Event",
+          resourceId: event.id,
+          metadata: JSON.stringify({ title: event.title })
+        }
+      });
+      return tx.event.findUnique({
+        where: { id: event.id },
+        select: { id: true, title: true, status: true, updatedAt: true }
+      });
+    });
+    res.json({ data: updated });
+  } catch (error) {
+    if (error instanceof Error && error.message === "EVENT_SUBMISSION_CONFLICT") {
+      res.status(409).json({ error: { code: "EVENT_SUBMISSION_CONFLICT", message: "The event changed while it was being submitted. Refresh and try again." } });
+      return;
+    }
+    next(error);
+  }
+});
 
 app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
   // Never send internal exception details or secrets to clients.
