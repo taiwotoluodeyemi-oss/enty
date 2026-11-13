@@ -58,3 +58,41 @@ jobs:
         run: npm run lint
       - name: Build web
         run: npm run build
+
+
+  postgresql:
+    name: PostgreSQL schema and migration verification
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: evty
+          POSTGRES_PASSWORD: evty_ci_password
+          POSTGRES_DB: evty_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U evty -d evty_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install API dependencies
+        run: npm install
+      - name: Validate PostgreSQL Prisma schema
+        run: npm run db:pg:validate
+        env:
+          DATABASE_URL: postgresql://evty:evty_ci_password@localhost:5432/evty_ci?schema=public
+      - name: Apply PostgreSQL migrations to a fresh database
+        run: npm run db:pg:deploy
+        env:
+          DATABASE_URL: postgresql://evty:evty_ci_password@localhost:5432/evty_ci?schema=public
+      - name: Generate PostgreSQL Prisma client
+        run: npm run db:pg:generate
+        env:
+          DATABASE_URL: postgresql://evty:evty_ci_password@localhost:5432/evty_ci?schema=public
