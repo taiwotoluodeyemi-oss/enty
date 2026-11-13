@@ -1,0 +1,168 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum EventStatus {
+  DRAFT
+  PENDING_REVIEW
+  PUBLISHED
+  CANCELLED
+  COMPLETED
+}
+
+enum UserRole {
+  ATTENDEE
+  ORGANIZER
+  PROMOTER
+  ADVERTISER
+  VENDOR
+  GATE_STAFF
+  ADMIN
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  displayName  String
+  passwordHash String
+  role         UserRole  @default(ATTENDEE)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  events       Event[]   @relation("OrganizerEvents")
+  orders       Order[]
+}
+
+model Event {
+  id          String      @id @default(cuid())
+  organizerId String
+  organizer   User        @relation("OrganizerEvents", fields: [organizerId], references: [id])
+  title       String
+  description String?
+  venueName   String
+  city        String
+  startsAt    DateTime
+  endsAt      DateTime
+  currency    String      @default("NGN")
+  status      EventStatus @default(DRAFT)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  ticketTypes TicketType[]
+  orders      Order[]
+  @@index([status, startsAt])
+  @@index([organizerId, createdAt])
+}
+
+model TicketType {
+  id          String   @id @default(cuid())
+  eventId     String
+  event       Event    @relation(fields: [eventId], references: [id])
+  name        String
+  description String?
+  priceMinor  Int
+  currency    String
+  capacity    Int
+  soldCount   Int      @default(0)
+  salesStart  DateTime?
+  salesEnd    DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  orderItems  OrderItem[]
+  @@index([eventId])
+}
+
+model Order {
+  id             String      @id @default(cuid())
+  attendeeId     String
+  attendee       User        @relation(fields: [attendeeId], references: [id])
+  eventId        String
+  event          Event       @relation(fields: [eventId], references: [id])
+  status         String      @default("PENDING_PAYMENT")
+  currency       String
+  totalMinor     Int
+  idempotencyKey String      @unique
+  providerRef    String?     @unique
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  items          OrderItem[]
+  @@index([attendeeId, createdAt])
+  @@index([eventId, status])
+}
+
+model OrderItem {
+  id           String     @id @default(cuid())
+  orderId       String
+  order         Order      @relation(fields: [orderId], references: [id])
+  ticketTypeId  String
+  ticketType    TicketType @relation(fields: [ticketTypeId], references: [id])
+  quantity      Int
+  unitPriceMinor Int
+  createdAt     DateTime   @default(now())
+  tickets       Ticket[]
+  @@index([orderId])
+}
+
+model Ticket {
+  id          String    @id @default(cuid())
+  orderItemId String
+  orderItem   OrderItem @relation(fields: [orderItemId], references: [id])
+  qrTokenHash String    @unique
+  status      String    @default("VALID")
+  admittedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  @@index([status, admittedAt])
+}
+
+model LedgerEntry {
+  id             String   @id @default(cuid())
+  transactionKey  String
+  accountCode     String
+  currency        String
+  amountMinor     Int
+  entryType       String
+  createdAt       DateTime @default(now())
+  @@index([transactionKey])
+  @@index([accountCode, currency, createdAt])
+}
+
+model CommissionAgreement {
+  id                 String   @id @default(cuid())
+  organizerId        String
+  version            Int
+  rateBasisPoints    Int
+  fixedFeeMinor      Int      @default(0)
+  currency           String
+  acceptedAt         DateTime?
+  effectiveFrom      DateTime
+  effectiveTo        DateTime?
+  createdAt          DateTime @default(now())
+  @@unique([organizerId, version])
+}
+
+model PromoterAttribution {
+  id             String   @id @default(cuid())
+  promoterId     String
+  eventId        String
+  referralCode   String
+  attributedAt   DateTime @default(now())
+  orderId        String?  @unique
+  commissionMinor Int     @default(0)
+  status         String   @default("PENDING")
+  @@index([promoterId, eventId])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorId     String?
+  action      String
+  resourceType String
+  resourceId  String?
+  metadata    String?
+  createdAt   DateTime @default(now())
+  @@index([actorId, createdAt])
+  @@index([resourceType, resourceId])
+}
