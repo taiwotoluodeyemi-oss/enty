@@ -232,7 +232,18 @@ app.get("/api/v1/events", async (req, res, next) => {
         take: limit,
         select: {
           id: true, title: true, description: true, venueName: true, city: true,
-          startsAt: true, endsAt: true, currency: true, status: true
+          startsAt: true, endsAt: true, currency: true, status: true,
+          ticketTypes: {
+            where: {
+              AND: [
+                { OR: [{ salesStart: null }, { salesStart: { lte: new Date() } }] },
+                { OR: [{ salesEnd: null }, { salesEnd: { gt: new Date() } }] }
+              ]
+            },
+            orderBy: [{ priceMinor: "asc" }, { id: "asc" }],
+            take: 1,
+            select: { id: true, priceMinor: true, currency: true, capacity: true, soldCount: true }
+          }
         }
       }),
       prisma.event.count({ where })
