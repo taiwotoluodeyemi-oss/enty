@@ -21,28 +21,36 @@ function formatDateTime(value) {
 
 export default async function EventDetailPage({ params }) {
   const { eventId } = await params;
-  let event;
+  let response;
+  let payload;
 
   try {
-    const response = await fetch(apiBase + "/events/" + encodeURIComponent(eventId), {
+    response = await fetch(apiBase + "/events/" + encodeURIComponent(eventId), {
       headers: { Accept: "application/json" },
       cache: "no-store"
     });
-    if (response.status === 404) notFound();
-    if (!response.ok) throw new Error("The event service is temporarily unavailable.");
-    const payload = await response.json();
-    event = payload.data;
-    if (!event) notFound();
-  } catch (error) {
-    if (error?.digest?.startsWith("NEXT_NOT_FOUND")) throw error;
+    if (response.ok) payload = await response.json();
+  } catch {
     return (
       <main style={{ maxWidth: 760, margin: "80px auto", padding: "0 24px", color: "#171815" }}>
         <Link href="/" style={{ color: "inherit" }}>← Back to discover</Link>
         <h1 style={{ fontSize: 42, letterSpacing: "-.05em" }}>We couldn’t load this event.</h1>
-        <p style={{ color: "#777872", lineHeight: 1.7 }}>{error.message || "Please try again in a moment."}</p>
+        <p style={{ color: "#777872", lineHeight: 1.7 }}>The event service is temporarily unavailable. Please try again in a moment.</p>
       </main>
     );
   }
+
+  if (response.status === 404 || !payload?.data) notFound();
+  if (!response.ok) {
+    return (
+      <main style={{ maxWidth: 760, margin: "80px auto", padding: "0 24px", color: "#171815" }}>
+        <Link href="/" style={{ color: "inherit" }}>← Back to discover</Link>
+        <h1 style={{ fontSize: 42, letterSpacing: "-.05em" }}>We couldn’t load this event.</h1>
+        <p style={{ color: "#777872", lineHeight: 1.7 }}>The event service returned an error. Please try again in a moment.</p>
+      </main>
+    );
+  }
+  const event = payload.data;
 
   return (
     <main style={{ minHeight: "100vh", background: "#f8f7f4", color: "#171815", padding: "28px 6.5% 80px" }}>
