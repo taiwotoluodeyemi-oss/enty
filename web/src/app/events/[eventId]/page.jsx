@@ -74,6 +74,7 @@ export default async function EventDetailPage({ params }) {
             <p style={{ margin: 0, color: "#8b8c84", fontSize: 10, letterSpacing: ".1em" }}>LOCATION</p>
             <strong style={{ display: "block", marginTop: 10 }}>{event.venueName}</strong>
             <span style={{ color: "#777872", fontSize: 13 }}>{event.city}</span>
+            <p style={{ margin: "14px 0 0", color: "#777872", fontSize: 13 }}>Organised by <strong style={{ color: "#171815" }}>{event.organizer?.displayName || "EVTY organiser"}</strong></p>
           </div>
         </div>
 
