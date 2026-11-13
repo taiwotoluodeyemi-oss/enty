@@ -234,6 +234,7 @@ export default function HomePage() {
                   <div className="event-dialog-facts">
                     <div><span>DATE & TIME</span><strong>{formatEventDate(eventDetails.startsAt)} · {formatEventTime(eventDetails.startsAt)}</strong></div>
                     <div><span>VENUE</span><strong>{eventDetails.venueName}</strong><small>{eventDetails.city}</small></div>
+                    <div><span>ORGANISED BY</span><strong>{eventDetails.organizer?.displayName || "EVTY organiser"}</strong></div>
                   </div>
                   <div className="event-dialog-tickets">
                     <h3>Tickets</h3>
