@@ -20,7 +20,7 @@ This file separates repository implementation from product ambition. Update it a
 - GitHub Actions workflow for Prisma validation/client generation, API build/tests, and web lint/build on pushes and pull requests to `main`.
 - Product requirements, financial-safety architecture, upstream integration review, attendee discovery notes, and release checklist.
 
-## Still not production-ready
+## Infrastructure provisioned for testing\n\n- Render Free PostgreSQL 18 test database `evty-dev-postgres` was provisioned in the `Taiwo's workspace` on 2026-11-13. It is temporary and scheduled to expire on 2026-12-13. See [temporary PostgreSQL test database runbook](POSTGRESQL_TEST_DATABASE.md).\n- The database was still in `creating` state at the last status check. It is not connected to the API. The Prisma datasource and migration lock still target SQLite; no PostgreSQL migration or cutover is claimed.\n\n## Still not production-ready
 
 ### Identity, access and trust
 - Email verification, password reset/recovery, revocable refresh sessions, MFA for privileged roles, lockout/credential-stuffing controls, and account lifecycle.
