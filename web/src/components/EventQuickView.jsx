@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-const apiBase = (process.env.NEXT_PUBLIC_EVTY_API_URL || "http://localhost:4000/api/v1").replace(/\\/+$/, "");
+const apiBase = (process.env.NEXT_PUBLIC_EVTY_API_URL || "http://localhost:4000/api/v1").replace(/\/+$/, "");
 
 function formatDate(value) {
   return new Intl.DateTimeFormat("en-NG", { dateStyle: "full", timeStyle: "short", timeZone: "Africa/Lagos" }).format(new Date(value));
