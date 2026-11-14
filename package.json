@@ -18,7 +18,8 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:pg:validate": "prisma validate --schema prisma/postgresql/schema.prisma",
     "db:pg:generate": "prisma generate --schema prisma/postgresql/schema.prisma",
-    "db:pg:deploy": "prisma migrate deploy --schema prisma/postgresql/schema.prisma"
+    "db:pg:deploy": "prisma migrate deploy --schema prisma/postgresql/schema.prisma",
+    "prestart": "npm run db:deploy"
   },
   "dependencies": {
     "@prisma/client": "^6.5.0",
@@ -40,5 +41,8 @@
     "tsx": "^4.19.3",
     "typescript": "^5.7.3",
     "vitest": "^3.0.7"
+  },
+  "prisma": {
+    "schema": "prisma/postgresql/schema.prisma"
   }
 }
