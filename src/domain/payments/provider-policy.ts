@@ -23,8 +23,12 @@ export function getPaymentProviderPolicy(
   return {
     primary: "opay",
     secondary: "paystack",
-    opayEnabled: env.OPAY_ENABLED === "true" &&
-      Boolean(env.OPAY_MERCHANT_ID && env.OPAY_PUBLIC_KEY && env.OPAY_PRIVATE_KEY),
+    // Sandbox credentials become usable as soon as they are supplied.
+    // An explicit false always disables OPay. LIVE additionally requires
+    // the separate merchant-approval gate to prevent accidental live charging.
+    opayEnabled: env.OPAY_ENABLED !== "false" &&
+      Boolean(env.OPAY_MERCHANT_ID && env.OPAY_PUBLIC_KEY && env.OPAY_PRIVATE_KEY) &&
+      (env.OPAY_ENV !== "live" || env.OPAY_LIVE_MODE_READY === "true"),
     paystackReady: Boolean(env.PAYSTACK_SECRET_KEY && env.PAYSTACK_WEBHOOK_SECRET)
   };
 }
