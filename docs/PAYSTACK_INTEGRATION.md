@@ -1,4 +1,6 @@
-# Paystack adapter integration boundary
+# Paystack secondary provider integration boundary
+
+Paystack is retained as EVTY's secondary payment provider. OPay is the primary provider for Nigeria NGN transactions. Do not automatically retry an ambiguous OPay transaction through Paystack; reconcile the original provider reference first to avoid duplicate customer charges.
 
 ## Implemented adapter
 
@@ -31,4 +33,4 @@ Before wiring it into checkout, EVTY still needs:
 6. Webhook raw-body capture, durable event deduplication, reconciliation and operational replay.
 7. Refund, chargeback and organiser settlement workflows.
 
-The current provider selection is a proposed initial Nigeria integration, not evidence that EVTY has a merchant account or Paystack approval. Confirm merchant onboarding, settlement model, fees, chargeback/refund rules and contractual terms before live mode.
+The provider priority is OPay primary and Paystack secondary. This is configuration and adapter readiness, not evidence that EVTY has an OPay or Paystack merchant account, production credentials or provider approval. Confirm merchant onboarding, settlement model, fees, chargeback/refund rules and contractual terms before live mode.
