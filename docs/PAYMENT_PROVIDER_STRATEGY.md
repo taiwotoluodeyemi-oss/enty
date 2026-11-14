@@ -5,7 +5,7 @@
 - **Primary provider: OPay Nigeria hosted Cashier checkout** for customer-facing NGN payments.
 - **Secondary provider: Paystack** remains integrated as an independently configurable provider for test/acceptance and controlled fallback. It must not be selected automatically after an ambiguous OPay timeout: first reconcile the OPay reference to avoid charging the customer twice.
 - Provider selection is server-side only. A client must never submit arbitrary provider credentials or override the platform's provider policy.
-- OPay is the default provider only when the merchant credentials and activation flag are present. Until OPay merchant onboarding, credentials, callback configuration and joint testing are complete, checkout must remain disabled rather than silently charge through a different provider.
+- OPay sandbox checkout becomes ready automatically when the three merchant credentials are present; `OPAY_ENABLED=false` is an emergency kill switch. LIVE checkout additionally requires `OPAY_ENV=live` and `OPAY_LIVE_MODE_READY=true` after OPay production approval and acceptance tests. Missing credentials always keep checkout disabled.
 
 ## OPay adapter
 
@@ -40,8 +40,9 @@ Official references:
 Configure these in the API service only; never add secrets to Git, web/mobile builds, CI logs or chat:
 - `PAYMENT_PRIMARY_PROVIDER=opay`
 - `PAYMENT_SECONDARY_PROVIDER=paystack`
-- `OPAY_ENABLED=false` until merchant onboarding and joint testing are complete; enable only after acceptance.
-- `OPAY_ENV=test` for staging; use `live` only after OPay approves production credentials.
+- `OPAY_ENABLED=true` so sandbox credentials are used as soon as supplied; set `false` as the emergency kill switch.
+- `OPAY_LIVE_MODE_READY=false` until OPay approves production access and EVTY passes live readiness checks.
+- `OPAY_ENV=test` for staging; use `live` only after OPay approves production credentials and `OPAY_LIVE_MODE_READY=true`.
 - `OPAY_MERCHANT_ID`
 - `OPAY_PUBLIC_KEY`
 - `OPAY_PRIVATE_KEY`
