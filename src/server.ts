@@ -107,7 +107,7 @@ app.get("/health", (_req, res) => {
 
 app.get("/health/db", async (_req, res) => {
   try {
-    await prisma.$queryRaw\`SELECT 1\`;
+    await prisma.$queryRaw`SELECT 1`;
     res.status(200).json({ status: "ok", database: "connected" });
   } catch {
     res.status(503).json({ status: "unavailable", database: "disconnected" });
