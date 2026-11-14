@@ -16,7 +16,9 @@ This file separates repository implementation from product ambition. Update it a
 - Public event detail responses include organiser display name.
 - Integer minor-unit money helper and unit tests.
 - Fixed-window rate-limit domain helper and unit tests.
-- Paystack server-side transaction initialize/verify adapter and timestamped plus legacy webhook-signature verification helpers, with unit tests. This adapter is not connected to order checkout or ticket fulfillment.
+- Paystack server-side transaction initialize/verify adapter and timestamped plus legacy webhook-signature verification helpers, with unit tests. It is the configured secondary provider, not yet connected to order checkout or ticket fulfillment.
+- OPay Nigeria hosted Cashier adapter for test/live endpoint selection, hosted checkout URL validation, HMAC-SHA512 status-query authentication and HMAC-SHA3-512 callback signature verification. OPay is the configured primary provider; checkout remains disabled until merchant onboarding, credentials and joint acceptance tests are complete.
+- Server-side payment provider policy defaults to OPay primary and Paystack secondary and explicitly prevents silent provider fallback after ambiguous OPay outcomes.
 - GitHub Actions workflow for Prisma validation/client generation, API build/tests, and web lint/build on pushes and pull requests to `main`. Run #84 at commit `6275d3df131340264da14f9d87216690518bd6b6` passed all three jobs: API build/tests, web lint/production build, and PostgreSQL schema/baseline migration verification against disposable PostgreSQL 16.
 - Product requirements, financial-safety architecture, upstream integration review, attendee discovery notes, and release checklist.
 
@@ -70,3 +72,12 @@ The GitHub Actions workflow is configured, but its current run result has not be
 - `JWT_SECRET`, `CORS_ORIGIN`, and `NODE_ENV=production` are configured in Render environment variables. Secret values are not stored in Git.
 - The API still uses the SQLite Prisma schema and does not yet use the temporary Render PostgreSQL instance.
 - Latest Render npm install reported 7 API dependency vulnerabilities (1 moderate, 4 high, 2 critical). Resolve and verify these before any production release.
+
+
+## Payment provider update — 2026-11-14
+
+- OPay has been selected as the primary provider for Nigerian NGN checkout; Paystack remains the secondary integration.
+- Added `src/domain/payments/opay.ts`, `src/domain/payments/provider-policy.ts`, and corresponding unit tests.
+- Added `docs/PAYMENT_PROVIDER_STRATEGY.md` with integration, environment, security and release requirements.
+- Render API now has non-secret routing configuration set to OPay primary, Paystack secondary, OPay test environment, and `OPAY_ENABLED=false`. No provider secret keys have been supplied or stored.
+- The OPay and Paystack adapters are not yet connected to a durable order/payment workflow, webhook inbox, inventory reservation, ledger, ticket fulfillment, refund or organiser settlement. Do not accept customer funds yet.
