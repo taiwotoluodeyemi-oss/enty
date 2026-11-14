@@ -13,7 +13,7 @@
 - Scheduled expiry: 2026-12-13
 - Dashboard: https://dashboard.render.com/d/dpg-dbrnbejbc2fs73cku450-a
 
-The Render resource was subsequently confirmed `available`. The API is still not attached and no database credentials have been added to the repository.
+The Render resource was subsequently confirmed `available`. The API is still not attached and no database credentials have been added to the repository. The PostgreSQL-specific schema and baseline migration have now passed the GitHub Actions PostgreSQL 16 verification job at commit `6275d3df131340264da14f9d87216690518bd6b6`; this verifies the checked-in baseline on a disposable CI database, not on the Render PostgreSQL 18 instance.
 
 A PostgreSQL-specific Prisma schema and clean baseline migration have now been added under `prisma/postgresql/`. They are deliberately separate from the current SQLite schema and migration history. New scripts `db:pg:validate`, `db:pg:generate`, and `db:pg:deploy` target this separate schema. CI now includes a PostgreSQL 16 service job intended to validate the schema and apply the baseline to a fresh database.
 
