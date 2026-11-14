@@ -2,10 +2,10 @@
 
 ## Current state
 
-- The Prisma datasource remains SQLite in this repository.
-- An initial SQLite migration is now checked in at `prisma/migrations/20261113000100_initial_evty/migration.sql`.
-- CI now runs `prisma migrate deploy` against a fresh SQLite database before generating the Prisma client and building the API.
-- This is a reproducible fresh-database baseline, not the PostgreSQL production migration.
+- The root `package.json` Prisma configuration points the application client and default Prisma commands at `prisma/postgresql/schema.prisma`.
+- The PostgreSQL schema has its own migration lock and baseline at `prisma/postgresql/migrations/20261113000100_initial_evty/migration.sql`.
+- The legacy root `prisma/schema.prisma` and `prisma/migrations/` are SQLite and must not be used for the PostgreSQL deployment.
+- The PostgreSQL datasource uses `DATABASE_URL` for runtime queries and `DIRECT_URL` for migrations.
 - No existing database has been inspected, copied, baselined or migrated as part of this change.
 
 ## PostgreSQL migration groundwork
@@ -18,9 +18,9 @@ Available commands:
 - `npm run db:pg:generate`
 - `npm run db:pg:deploy`
 
-The GitHub Actions workflow includes a disposable PostgreSQL service job to validate and apply this baseline. Confirm that job passes before using the Render database. The PostgreSQL schema is currently a parallel migration target; the running API still uses the root SQLite schema/client by default. Do not set the API's `DATABASE_URL` to PostgreSQL until the runtime cutover is implemented and verified.
+The GitHub Actions workflow includes a disposable PostgreSQL service job to validate and apply this baseline. Confirm that job passes before using the Render database. The PostgreSQL schema is selected by the root Prisma package configuration and is the schema used by the current build and deployment commands. The API's production data cutover is still gated on a valid PostgreSQL connection, successful migration, and end-to-end tests.
 
-The Render Free database `evty-dev-postgres` is available for temporary testing and expires on 2026-12-13. Use its private/internal connection string only from a service in the same Render workspace/region. Keep credentials in Render environment settings; never commit them. The hosted database was not directly inspected or migrated during this change.
+Neon is the selected database for isolated demo and production environments. Follow `docs/NEON_DATABASE_SETUP.md` and set both pooled `DATABASE_URL` and direct `DIRECT_URL` in Render. The previously provisioned Render Free database is not the selected database for this deployment.
 
 
 ## Fresh development database
@@ -51,9 +51,9 @@ If schema or data differs, prepare a reviewed forward migration or an export/imp
 
 PostgreSQL is the intended production relational database, but the current schema still declares `provider = "sqlite"`. Do not point a PostgreSQL URL at this schema or flip the provider without a reviewed PostgreSQL migration set and a data migration plan.
 
-The PostgreSQL cutover must include:
-- a PostgreSQL-specific schema and generated migration history;
-- a clean Postgres CI service that runs migrations, Prisma generation, build and tests;
+The PostgreSQL production release must include:
+- the PostgreSQL-specific schema and generated migration history;
+- a clean PostgreSQL CI service that runs migrations, Prisma generation, build and tests;
 - a repeatable SQLite-to-PostgreSQL export/import or a verified empty-database launch decision;
 - staging rehearsal, backup/restore proof, row-count and referential-integrity checks;
 - rollback and cutover instructions, with no destructive reset of the existing database.
