@@ -25,6 +25,28 @@ describe("EVTY payment provider policy", () => {
     expect(assertPrimaryPaymentProviderAvailable(policy)).toBe("opay");
   });
 
+  it("uses supplied OPay sandbox credentials immediately unless explicitly disabled", () => {
+    const policy = getPaymentProviderPolicy({
+      OPAY_MERCHANT_ID: "merchant",
+      OPAY_PUBLIC_KEY: "public",
+      OPAY_PRIVATE_KEY: "private",
+      OPAY_ENV: "test"
+    });
+    expect(policy.opayEnabled).toBe(true);
+    expect(assertPrimaryPaymentProviderAvailable(policy)).toBe("opay");
+  });
+
+  it("requires an explicit merchant-readiness gate before using OPay live credentials", () => {
+    const credentials = {
+      OPAY_MERCHANT_ID: "merchant",
+      OPAY_PUBLIC_KEY: "public",
+      OPAY_PRIVATE_KEY: "private",
+      OPAY_ENV: "live"
+    };
+    expect(getPaymentProviderPolicy(credentials).opayEnabled).toBe(false);
+    expect(getPaymentProviderPolicy({ ...credentials, OPAY_LIVE_MODE_READY: "true" }).opayEnabled).toBe(true);
+  });
+
   it("does not silently fall back to Paystack when OPay is unavailable", () => {
     const policy = getPaymentProviderPolicy({
       PAYSTACK_SECRET_KEY: "sk_test_example",
